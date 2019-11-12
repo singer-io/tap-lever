@@ -54,10 +54,11 @@ class BaseStream(base):
         page = 1
 
         all_resources = []
+        transformer = singer.Transformer()
         while _next is not None:
             result = self.client.make_request(url, self.API_METHOD, params=params)
             _next = result.get('next')
-            data = self.get_stream_data(result['data'])
+            data = self.get_stream_data(result['data'], transformer)
 
             with singer.metrics.record_counter(endpoint=table) as counter:
                 singer.write_records(
@@ -73,17 +74,16 @@ class BaseStream(base):
             page += 1
         return all_resources
 
-    def get_stream_data(self, result):
+    def get_stream_data(self, result, transformer):
         metadata = {}
 
         if self.catalog.metadata is not None:
             metadata = singer.metadata.to_map(self.catalog.metadata)
 
-        with singer.Transformer() as tx:
-            return [
-                tx.transform(record, self.catalog.schema.to_dict(), metadata)
-                for record in result
-            ]
+        return [
+            transformer.transform(record, self.catalog.schema.to_dict(), metadata)
+            for record in result
+        ]
 
 class TimeRangeStream(BaseStream):
     RANGE_FIELD = 'updated_at'
