@@ -29,6 +29,8 @@ class BaseStream(base):
         if _next:
              params["offset"] = _next
 
+        return params
+
     def sync_data(self):
         table = self.TABLE
 
@@ -72,11 +74,16 @@ class BaseStream(base):
         return all_resources
 
     def get_stream_data(self, result):
-        return [
-            self.transform_record(record)
-            for record in result
-        ]
+        metadata = {}
 
+        if self.catalog.metadata is not None:
+            metadata = singer.metadata.to_map(self.catalog.metadata)
+
+        with singer.Transformer() as tx:
+            return [
+                tx.transform(record, self.catalog.schema.to_dict(), metadata)
+                for record in result
+            ]
 
 class TimeRangeStream(BaseStream):
     RANGE_FIELD = 'updated_at'
