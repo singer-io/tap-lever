@@ -7,6 +7,7 @@ from tap_lever.streams.referrals import CandidateReferralsStream
 from tap_lever.streams.requisitions import RequisitionStream
 from tap_lever.streams.sources import SourcesStream
 from tap_lever.streams.stages import StagesStream
+from tap_lever.streams.users import UsersStream
 
 AVAILABLE_STREAMS = [
     CandidateStream,  # must sync first to fill CACHE
@@ -18,6 +19,7 @@ AVAILABLE_STREAMS = [
     RequisitionStream,
     SourcesStream,
     StagesStream,
+    UsersStream,
 ]
 
 __all__ = [
@@ -30,4 +32,5 @@ __all__ = [
     "RequisitionStream",
     "SourcesStream",
     "StagesStream",
+    "UsersStream",
 ]
