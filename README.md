@@ -8,11 +8,15 @@ It:
 - Generates a catalog of available data in Lever
 - Extracts the following resources:
   - candidates
-  - postings
+  - archive resons
+  - applications
+  - offers
   - referrals
+  - postings
   - requisitions
   - sources
   - stages
+  - users
 
 ### Quick Start
 
