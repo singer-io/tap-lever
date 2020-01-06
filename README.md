@@ -11,7 +11,9 @@ It:
   - archive resons
   - applications
   - offers
+  - opportunities
   - referrals
+  - resumes
   - postings
   - requisitions
   - sources
