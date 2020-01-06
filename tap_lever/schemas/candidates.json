@@ -51,7 +51,14 @@
     },
     "archived": {
       "type": ["null", "object"],
-      "properties": {}
+      "properties": {
+        "archivedAt": {
+          "type": ["integer", "null"]
+        },
+        "reason": {
+          "type": ["string", "null"]
+        }
+      }
     },
     "tags": {
       "type": ["array", "null"],
