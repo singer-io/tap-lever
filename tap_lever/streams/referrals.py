@@ -1,4 +1,5 @@
 import singer
+
 from tap_lever.streams import cache as stream_cache
 from tap_lever.streams.base import BaseStream
 
@@ -23,7 +24,6 @@ class CandidateReferralsStream(BaseStream):
         candidates = stream_cache.get("candidates")
         LOGGER.info("Found {} candidates in cache".format(len(candidates)))
 
-        params = self.get_params(_next=None)
         for i, candidate in enumerate(candidates):
             LOGGER.info(
                 "Fetching referrals for candidate {} of {}".format(
@@ -32,7 +32,7 @@ class CandidateReferralsStream(BaseStream):
             )
             candidate_id = candidate["id"]
             url = self.get_url(candidate_id)
-            resources = self.sync_paginated(url, params)
+            resources = self.sync_paginated(url)
 
 
 class OpportunityReferralsStream(BaseStream):
@@ -53,7 +53,6 @@ class OpportunityReferralsStream(BaseStream):
         opportunities = stream_cache.get("opportunities")
         LOGGER.info("Found {} opportunities in cache".format(len(opportunities)))
 
-        params = self.get_params(_next=None)
         for i, opportunity in enumerate(opportunities):
             LOGGER.info(
                 "Fetching referrals for opportunity {} of {}".format(
@@ -62,4 +61,4 @@ class OpportunityReferralsStream(BaseStream):
             )
             opportunity_id = opportunity["id"]
             url = self.get_url(opportunity_id)
-            resources = self.sync_paginated(url, params)
+            resources = self.sync_paginated(url)
