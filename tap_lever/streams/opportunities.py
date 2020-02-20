@@ -31,13 +31,28 @@ class OpportunityStream(TimeRangeStream):
 
         return self.sync_data(child_streams)
 
-    def sync_paginated(self, url, params=None, child_stream=None):
+    def sync_paginated(self, url, params=None, child_streams=None):
         table = self.TABLE
         _next = True
         page = 1
 
-        all_resources = []
         transformer = singer.Transformer()
+        applications_stream = OpportunityApplicationsStream(self.config,
+                                                            self.state,
+                                                            child_streams['opportunity_applications'],
+                                                            self.client)
+        offers_stream = OpportunityOffersStream(self.config,
+                                                self.state,
+                                                child_streams['opportunity_offers'],
+                                                self.client)
+        referrals_stream = OpportunityReferralsStream(self.config,
+                                                      self.state,
+                                                      child_streams['opportunity_referrals'],
+                                                      self.client)
+        resumes_stream = OpportunityResumesStream(self.config,
+                                                  self.state,
+                                                  child_streams['opportunity_resumes'],
+                                                  self.client)
         while _next is not None:
             result = self.client.make_request(url, self.API_METHOD, params=params)
             _next = result.get('next')
@@ -47,53 +62,32 @@ class OpportunityStream(TimeRangeStream):
             for opportunity in data:
                 opportunity_id = opportunity['id']
 
-                if child_stream.get('opportunity_applications'):
-                    OpportunityApplicationsStream(
-                        self.config,
-                        self.state,
-                        child_stream['opportunity_applications'],
-                        self.client
-                    ).sync_data(opportunity_id)
+                if child_streams.get('opportunity_applications'):
+                    applications_stream.sync_data(opportunity_id)
 
-                if child_stream.get('opportunity_offers'):
-                    OpportunityOffersStream(
-                        self.config,
-                        self.state,
-                        child_stream['opportunity_offers'],
-                        self.client
-                    ).sync_data(opportunity_id)
+                if child_streams.get('opportunity_offers'):
+                    offers_stream.sync_data(opportunity_id)
 
-                if child_stream.get('opportunity_referrals'):
-                    OpportunityReferralsStream(
-                        self.config,
-                        self.state,
-                        child_stream['opportunity_referrals'],
-                        self.client
-                    ).sync_data(opportunity_id)
+                if child_streams.get('opportunity_referrals'):
+                    referrals_stream.sync_data(opportunity_id)
 
-                if child_stream.get('opportunity_resumes'):
-                    OpportunityResumesStream(
-                        self.config,
-                        self.state,
-                        child_stream['opportunity_resumes'],
-                        self.client
-                    ).sync_data(opportunity_id)
+                if child_streams.get('opportunity_resumes'):
+                    resumes_stream.sync_data(opportunity_id)
+
             LOGGER.info('Finished Opportunity child stream syncs')
 
 
             with singer.metrics.record_counter(endpoint=table) as counter:
                 singer.write_records(table, data)
                 counter.increment(len(data))
-                all_resources.extend(data)
 
             if _next:
                 params['offset'] = _next
 
             LOGGER.info('Synced page {} for {}'.format(page, self.TABLE))
             page += 1
-        return all_resources
 
-    def sync_data_for_period(self, date, interval, child_stream=None):
+    def sync_data_for_period(self, date, interval, child_streams=None):
         table = self.TABLE
 
         updated_after = date
@@ -106,7 +100,7 @@ class OpportunityStream(TimeRangeStream):
 
         params = self.get_params(updated_after, updated_before)
         url = self.get_url()
-        res = self.sync_paginated(url, params, child_stream)
+        self.sync_paginated(url, params, child_streams)
 
         self.state = incorporate(self.state,
                                  table,
@@ -114,9 +108,8 @@ class OpportunityStream(TimeRangeStream):
                                  date.isoformat())
 
         save_state(self.state)
-        return res
 
-    def sync_data(self, child_stream=None):
+    def sync_data(self, child_streams=None):
         table = self.TABLE
 
         date = get_last_record_value_for_table(self.state, table)
@@ -126,14 +119,8 @@ class OpportunityStream(TimeRangeStream):
 
         interval = timedelta(days=1)
 
-        all_resources = []
         while date < datetime.now(pytz.utc):
-            res = self.sync_data_for_period(date, interval, child_stream)
-            all_resources.extend(res)
+            self.sync_data_for_period(date, interval, child_streams)
             date = date + interval
-
-        if self.CACHE_RESULTS:
-            stream_cache.add(table, all_resources)
-            LOGGER.info('Added {} {}s to cache'.format(len(all_resources), table))
 
         return self.state
