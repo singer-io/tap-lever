@@ -55,24 +55,13 @@ class LeverRunner(tap_framework.Runner):
         LOGGER.info('Will sync: %s', ', '.join([stream.TABLE for stream in streams]))
 
         for stream in streams:
-            try:
-                stream.state = self.state
+            stream.state = self.state
 
-                if stream.TABLE == 'opportunities':
-                    stream.sync(opportunity_child_catalogs)
-                else:
-                    stream.sync()
-                self.state = stream.state
-            except OSError as e:
-                LOGGER.error(str(e))
-                exit(e.errno)
-
-            except Exception as e:
-                LOGGER.error(str(e))
-                LOGGER.error('Failed to sync endpoint {}, moving on!'
-                             .format(stream.TABLE))
-                raise e
-
+            if stream.TABLE == 'opportunities':
+                stream.sync(opportunity_child_catalogs)
+            else:
+                stream.sync()
+            self.state = stream.state
         save_state(self.state)
 
 
