@@ -7,7 +7,7 @@ from tap_framework.streams import is_selected
 
 from tap_lever.client import LeverClient
 from tap_lever.streams import AVAILABLE_STREAMS
-
+from tap_lever.state import save_state
 
 LOGGER = singer.get_logger()  # noqa
 
