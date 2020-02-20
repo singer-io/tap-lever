@@ -1,7 +1,8 @@
 import singer
 from tap_lever.streams import cache as stream_cache
 from tap_lever.streams.base import TimeRangeStream
-from tap_lever.state import get_last_record_value_for_table
+from tap_lever.state import incorporate, save_state, \
+    get_last_record_value_for_table
 from tap_lever.config import get_config_start_date
 from datetime import timedelta, datetime
 import pytz
@@ -46,33 +47,37 @@ class OpportunityStream(TimeRangeStream):
             for opportunity in data:
                 opportunity_id = opportunity['id']
 
-                OpportunityApplicationsStream(
-                    self.config,
-                    self.state,
-                    child_stream['opportunity_applications'],
-                    self.client
-                ).sync_data(opportunity_id)
+                if child_stream.get('opportunity_applications'):
+                    OpportunityApplicationsStream(
+                        self.config,
+                        self.state,
+                        child_stream['opportunity_applications'],
+                        self.client
+                    ).sync_data(opportunity_id)
 
-                OpportunityOffersStream(
-                    self.config,
-                    self.state,
-                    child_stream['opportunity_offers'],
-                    self.client
-                ).sync_data(opportunity_id)
+                if child_stream.get('opportunity_offers'):
+                    OpportunityOffersStream(
+                        self.config,
+                        self.state,
+                        child_stream['opportunity_offers'],
+                        self.client
+                    ).sync_data(opportunity_id)
 
-                OpportunityReferralsStream(
-                    self.config,
-                    self.state,
-                    child_stream['opportunity_referrals'],
-                    self.client
-                ).sync_data(opportunity_id)
+                if child_stream.get('opportunity_referrals'):
+                    OpportunityReferralsStream(
+                        self.config,
+                        self.state,
+                        child_stream['opportunity_referrals'],
+                        self.client
+                    ).sync_data(opportunity_id)
 
-                OpportunityResumesStream(
-                    self.config,
-                    self.state,
-                    child_stream['opportunity_resumes'],
-                    self.client
-                ).sync_data(opportunity_id)
+                if child_stream.get('opportunity_resumes'):
+                    OpportunityResumesStream(
+                        self.config,
+                        self.state,
+                        child_stream['opportunity_resumes'],
+                        self.client
+                    ).sync_data(opportunity_id)
             LOGGER.info('Finished Opportunity child stream syncs')
 
 
@@ -119,7 +124,7 @@ class OpportunityStream(TimeRangeStream):
         if date is None:
             date = get_config_start_date(self.config)
 
-        interval = timedelta(days=7)
+        interval = timedelta(days=1)
 
         all_resources = []
         while date < datetime.now(pytz.utc):
