@@ -35,7 +35,7 @@ class LeverClient:
 
         response_json = safe_json_parse(response)
         # NB: Observed - "Invalid offset token: Offset token is invalid for sort"
-        if response_json and "Invalid offset token" in response_json.get("message"):
+        if response_json and "Invalid offset token" in response_json.get("message", ""):
             raise OffsetInvalidException(response.text)
 
         if response.status_code != 200:
