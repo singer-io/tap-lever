@@ -20,6 +20,8 @@ LOGGER = singer.get_logger()
 class BaseStream(base):
     KEY_PROPERTIES = ['id']
     CACHE_RESULTS = False
+    INCLUDE_PARENT_ID = False
+    ALL_OFFERS = []
 
     def get_url(self):
         return 'https://api.lever.co/v1{}'.format(self.path)
