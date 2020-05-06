@@ -17,11 +17,11 @@ from tap_framework.streams import BaseStream as base
 LOGGER = singer.get_logger()
 
 
+
 class BaseStream(base):
     KEY_PROPERTIES = ['id']
     CACHE_RESULTS = False
     INCLUDE_PARENT_ID = False
-    ALL_OFFERS = []
 
     def get_url(self):
         return 'https://api.lever.co/v1{}'.format(self.path)
@@ -60,6 +60,10 @@ class BaseStream(base):
         while _next is not None:
             result = self.client.make_request(url, self.API_METHOD, params=params)
             _next = result.get('next')
+
+            if self.INCLUDE_PARENT_ID:
+                self.add_parent_id(result['data'])
+
             data = self.get_stream_data(result['data'], transformer)
 
             with singer.metrics.record_counter(endpoint=table) as counter:

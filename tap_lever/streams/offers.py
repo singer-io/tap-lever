@@ -34,7 +34,9 @@ class CandidateOffersStream(BaseStream):
 class OpportunityOffersStream(BaseStream):
     API_METHOD = "GET"
     TABLE = "opportunity_offers"
-
+    INCLUDE_PARENT_ID = True
+    CURRENT_PARENT_ID = None
+    
     @property
     def path(self):
         return "/opportunities/{opportunity_id}/offers"
@@ -46,4 +48,9 @@ class OpportunityOffersStream(BaseStream):
     def sync_data(self, opportunity_id):
         params = self.get_params(_next=None)
         url = self.get_url(opportunity_id)
+        self.CURRENT_PARENT_ID = opportunity_id
         resources = self.sync_paginated(url, params)
+
+    def add_parent_id(self, data):
+        for rec in data:
+            rec['opportunityId'] = self.CURRENT_PARENT_ID
