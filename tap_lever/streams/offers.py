@@ -36,7 +36,7 @@ class OpportunityOffersStream(BaseStream):
     TABLE = "opportunity_offers"
     INCLUDE_PARENT_ID = True
     CURRENT_PARENT_ID = None
-    
+
     @property
     def path(self):
         return "/opportunities/{opportunity_id}/offers"
