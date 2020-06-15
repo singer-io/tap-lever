@@ -1,3 +1,4 @@
+import backfill
 import requests
 import singer
 import singer.metrics
@@ -5,6 +6,9 @@ import singer.metrics
 LOGGER = singer.get_logger()  # noqa
 
 class OffsetInvalidException(Exception):
+    pass
+
+class RateLimitException(Exception):
     pass
 
 def safe_json_parse(response):
@@ -20,6 +24,10 @@ class LeverClient:
     def __init__(self, config):
         self.config = config
 
+    @backoff.on_exception(backoff.expo,
+                          RateLimitException,
+                          max_tries=10,
+                          factor=2)
     def make_request(self, url, method, params=None, body=None):
         LOGGER.info("Making {} request to {} ({})".format(method, url, params))
 
@@ -37,6 +45,9 @@ class LeverClient:
         # NB: Observed - "Invalid offset token: Offset token is invalid for sort"
         if response_json and "Invalid offset token" in response_json.get("message", ""):
             raise OffsetInvalidException(response.text)
+
+        if response_json and "You have exceeded your request rate of" in response_json.get("message", ""):
+            raise RateLimitException(response.text)
 
         if response.status_code != 200:
             raise RuntimeError(response.text)
