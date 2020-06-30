@@ -29,6 +29,8 @@ class BaseStream(base):
         if _next:
              params["offset"] = _next
 
+        return params
+
     def sync_data(self):
         table = self.TABLE
 
@@ -46,16 +48,17 @@ class BaseStream(base):
         save_state(self.state)
         return self.state
 
-    def sync_paginated(self, url, params):
+    def sync_paginated(self, url, params=None):
         table = self.TABLE
         _next = True
         page = 1
 
         all_resources = []
+        transformer = singer.Transformer(singer.UNIX_MILLISECONDS_INTEGER_DATETIME_PARSING)
         while _next is not None:
             result = self.client.make_request(url, self.API_METHOD, params=params)
             _next = result.get('next')
-            data = self.get_stream_data(result['data'])
+            data = self.get_stream_data(result['data'], transformer)
 
             with singer.metrics.record_counter(endpoint=table) as counter:
                 singer.write_records(
@@ -69,14 +72,19 @@ class BaseStream(base):
 
             LOGGER.info('Synced page {} for {}'.format(page, self.TABLE))
             page += 1
+        transformer.log_warning()
         return all_resources
 
-    def get_stream_data(self, result):
+    def get_stream_data(self, result, transformer):
+        metadata = {}
+
+        if self.catalog.metadata is not None:
+            metadata = singer.metadata.to_map(self.catalog.metadata)
+
         return [
-            self.transform_record(record)
+            transformer.transform(record, self.catalog.schema.to_dict(), metadata)
             for record in result
         ]
-
 
 class TimeRangeStream(BaseStream):
     RANGE_FIELD = 'updated_at'

@@ -1,0 +1,72 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "creator": {
+      "type": ["string", "null"]
+    },
+    "status": {
+      "type": ["string", "null"]
+    },
+    "fields": {
+      "type": ["null", "array"],
+      "items": {
+        "type": ["object", "null"],
+        "properties": {
+          "text": {
+            "type": ["string", "null"]
+          },
+          "identifier": {
+            "type": ["string", "null"]
+          },
+          "value": {
+            "type": ["string", "null"]
+          }
+        }
+      }
+    },
+    "signatures": {
+      "type": ["object", "null"],
+      "properties": {
+        "role": {
+          "type": ["string", "null"]
+        },
+        "name": {
+          "type": ["string", "null"]
+        },
+        "email": {
+          "type": ["string", "null"]
+        },
+        "firstOpenedAt": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "lastOpenedAt": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "signedAt": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "signed": {
+          "type": ["boolean", "null"]
+        }
+      }
+    },
+    "approvedAt": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "sentAt": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    }
+  }
+}

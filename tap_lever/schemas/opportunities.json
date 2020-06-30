@@ -91,10 +91,6 @@
         "type": ["string", "null"]
       }
     },
-    "resume": {
-      "type": ["null", "object"],
-      "properties": {}
-    },
     "createdAt": {
       "type": ["string", "null"],
       "format": "date-time"
