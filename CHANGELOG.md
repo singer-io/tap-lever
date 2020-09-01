@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.0
+  * Releasing GA
+
 ## 0.4.1
  * Fix opportunities bookmarking [#27](https://github.com/singer-io/tap-lever/pull/27)
 
