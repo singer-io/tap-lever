@@ -17,7 +17,7 @@ jobs:
           name: 'JSON Validator'
           command: |
             source /usr/local/share/virtualenvs/tap-tester/bin/activate
-            stitch-validate-json /usr/local/share/virtualenvs/tap-lever/lib/python3.5/site-packages/tap_lever/schemas/*.json
+            stitch-validate-json tap_lever/schemas/*.json
       # TODO Get this test running
       #      (https://stitchdata.atlassian.net/browse/SRCE-4775)
       # - run:
