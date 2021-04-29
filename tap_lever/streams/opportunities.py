@@ -11,6 +11,8 @@ from .applications import OpportunityApplicationsStream
 from .offers import OpportunityOffersStream
 from .referrals import OpportunityReferralsStream
 from .resumes import OpportunityResumesStream
+from .feedback import OpportunityFeedbackStream
+
 LOGGER = singer.get_logger()  # noqa
 
 
@@ -18,6 +20,7 @@ class OpportunityStream(TimeRangeStream):
     API_METHOD = "GET"
     TABLE = "opportunities"
     KEY_PROPERTIES = ["id"]
+    EXPAND = ["applications"]
 
     @property
     def path(self):
@@ -52,10 +55,16 @@ class OpportunityStream(TimeRangeStream):
                                                   self.state,
                                                   child_streams.get('opportunity_resumes'),
                                                   self.client)
+        feedback_stream = OpportunityFeedbackStream(self.config,
+                                                    self.state,
+                                                    child_streams.get('opportunity_feedback'),
+                                                    self.client)
         # Set up looping parameters (page is for logging consistency)
         finished_paginating = False
         page = singer.bookmarks.get_bookmark(self.state, table, "next_page") or 1
         _next = singer.bookmarks.get_bookmark(self.state, table, "offset")
+        params["expand"] = self.EXPAND
+
         if _next:
             params['offset'] = _next
 
@@ -69,7 +78,6 @@ class OpportunityStream(TimeRangeStream):
                 page = 1
                 result = self.client.make_request(url, self.API_METHOD, params=params)
             _next = result.get('next')
-
             data = self.get_stream_data(result['data'], transformer)
 
             LOGGER.info('Starting Opportunity child stream syncs')
@@ -92,8 +100,11 @@ class OpportunityStream(TimeRangeStream):
                     resumes_stream.write_schema()
                     resumes_stream.sync_data(opportunity_id)
 
-            LOGGER.info('Finished Opportunity child stream syncs')
+                if child_streams.get('opportunity_feedback'):
+                    feedback_stream.write_schema()
+                    feedback_stream.sync_data(opportunity_id)
 
+            LOGGER.info('Finished Opportunity child stream syncs')
 
             with singer.metrics.record_counter(endpoint=table) as counter:
                 self.write_schema()
@@ -108,7 +119,8 @@ class OpportunityStream(TimeRangeStream):
                 self.state = singer.bookmarks.write_bookmark(self.state, table, "offset", _next)
                 self.state = singer.bookmarks.write_bookmark(self.state, table, "next_page", page)
                 # Save the last_record bookmark when we're paginating to make sure we pick up there if interrupted
-                self.state = singer.bookmarks.write_bookmark(self.state, table, "last_record", updated_after.isoformat())
+                self.state = singer.bookmarks.write_bookmark(self.state, table, "last_record",
+                                                             updated_after.isoformat())
                 save_state(self.state)
             else:
                 finished_paginating = True
@@ -117,7 +129,6 @@ class OpportunityStream(TimeRangeStream):
         self.state = singer.bookmarks.clear_bookmark(self.state, table, "offset")
         self.state = singer.bookmarks.clear_bookmark(self.state, table, "next_page")
         save_state(self.state)
-
 
     def sync_data_for_period(self, date, interval, child_streams=None):
         table = self.TABLE

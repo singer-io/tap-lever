@@ -16,6 +16,7 @@ from tap_lever.streams.resumes import CandidateResumesStream, OpportunityResumes
 from tap_lever.streams.sources import SourcesStream
 from tap_lever.streams.stages import StagesStream
 from tap_lever.streams.users import UsersStream
+from tap_lever.streams.feedback import OpportunityFeedbackStream
 
 AVAILABLE_STREAMS = [
     CandidateStream,  # must sync first to fill CACHE
@@ -34,6 +35,7 @@ AVAILABLE_STREAMS = [
     SourcesStream,
     StagesStream,
     UsersStream,
+    OpportunityFeedbackStream
 ]
 
 __all__ = [
@@ -53,4 +55,5 @@ __all__ = [
     "SourcesStream",
     "StagesStream",
     "UsersStream",
+    "OpportunityFeedbackStream"
 ]
