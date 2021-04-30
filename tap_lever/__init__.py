@@ -31,14 +31,15 @@ class LeverRunner(tap_framework.Runner):
                         raise RuntimeError(
                             "{} requires that that the following are "
                             "selected: {}"
-                            .format(stream_catalog.stream,
-                                    ','.join(available_stream.REQUIRES)))
+                                .format(stream_catalog.stream,
+                                        ','.join(available_stream.REQUIRES)))
 
                     if available_stream.TABLE in {'opportunity_applications',
                                                   'opportunity_offers',
                                                   'opportunity_referrals',
                                                   'opportunity_resumes',
-                                                  'opportunity_feedback'}:
+                                                  'opportunity_feedback',
+                                                  'opportunity_forms'}:
                         LOGGER.info('Will sync %s during the Opportunity stream sync', available_stream.TABLE)
                         opportunity_child_catalogs[available_stream.TABLE] = stream_catalog
                     else:
@@ -52,7 +53,6 @@ class LeverRunner(tap_framework.Runner):
         LOGGER.info("Starting sync.")
 
         streams, opportunity_child_catalogs = self.get_streams_to_replicate()
-
 
         if any(streams):
             LOGGER.info('Will sync: %s', ', '.join([stream.TABLE for stream in streams]))

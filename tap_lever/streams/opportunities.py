@@ -12,6 +12,7 @@ from .offers import OpportunityOffersStream
 from .referrals import OpportunityReferralsStream
 from .resumes import OpportunityResumesStream
 from .feedback import OpportunityFeedbackStream
+from .forms import OpportunityFormStream
 
 LOGGER = singer.get_logger()  # noqa
 
@@ -59,12 +60,16 @@ class OpportunityStream(TimeRangeStream):
                                                     self.state,
                                                     child_streams.get('opportunity_feedback'),
                                                     self.client)
+        form_stream = OpportunityFormStream(self.config,
+                                                    self.state,
+                                                    child_streams.get('opportunity_forms'),
+                                                    self.client)
         # Set up looping parameters (page is for logging consistency)
         finished_paginating = False
         page = singer.bookmarks.get_bookmark(self.state, table, "next_page") or 1
         _next = singer.bookmarks.get_bookmark(self.state, table, "offset")
         params["expand"] = self.EXPAND
-
+        params["archived"] = child_streams is None
         if _next:
             params['offset'] = _next
 
@@ -83,7 +88,7 @@ class OpportunityStream(TimeRangeStream):
             LOGGER.info('Starting Opportunity child stream syncs')
             for opportunity in data:
                 opportunity_id = opportunity['id']
-
+                # TODO: improve tap by using a dictionary
                 if child_streams.get('opportunity_applications'):
                     applications_stream.write_schema()
                     applications_stream.sync_data(opportunity_id)
@@ -103,6 +108,10 @@ class OpportunityStream(TimeRangeStream):
                 if child_streams.get('opportunity_feedback'):
                     feedback_stream.write_schema()
                     feedback_stream.sync_data(opportunity_id)
+
+                if child_streams.get('opportunity_forms'):
+                    form_stream.write_schema()
+                    form_stream.sync_data(opportunity_id)
 
             LOGGER.info('Finished Opportunity child stream syncs')
 
