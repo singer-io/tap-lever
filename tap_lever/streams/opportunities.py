@@ -1,3 +1,4 @@
+import aiohttp
 import singer
 from tap_lever.client import OffsetInvalidException
 from tap_lever.streams import cache as stream_cache
@@ -7,15 +8,10 @@ from tap_lever.state import incorporate, save_state, \
 from tap_lever.config import get_config_start_date
 from datetime import timedelta, datetime
 import pytz
-from .applications import OpportunityApplicationsStream
-from .offers import OpportunityOffersStream
-from .referrals import OpportunityReferralsStream
-from .resumes import OpportunityResumesStream
-from .feedback import OpportunityFeedbackStream
-from .forms import OpportunityFormStream
+
 
 LOGGER = singer.get_logger()  # noqa
-
+import asyncio
 
 class OpportunityStream(TimeRangeStream):
     API_METHOD = "GET"
@@ -36,34 +32,11 @@ class OpportunityStream(TimeRangeStream):
 
         return self.sync_data(child_streams)
 
-    def sync_paginated(self, url, params=None, updated_after=None, child_streams=None):
+    async def sync_paginated(self, url, params=None, updated_after=None, child_streams=None):
         table = self.TABLE
 
         transformer = singer.Transformer(singer.UNIX_MILLISECONDS_INTEGER_DATETIME_PARSING)
-        applications_stream = OpportunityApplicationsStream(self.config,
-                                                            self.state,
-                                                            child_streams.get('opportunity_applications'),
-                                                            self.client)
-        offers_stream = OpportunityOffersStream(self.config,
-                                                self.state,
-                                                child_streams.get('opportunity_offers'),
-                                                self.client)
-        referrals_stream = OpportunityReferralsStream(self.config,
-                                                      self.state,
-                                                      child_streams.get('opportunity_referrals'),
-                                                      self.client)
-        resumes_stream = OpportunityResumesStream(self.config,
-                                                  self.state,
-                                                  child_streams.get('opportunity_resumes'),
-                                                  self.client)
-        feedback_stream = OpportunityFeedbackStream(self.config,
-                                                    self.state,
-                                                    child_streams.get('opportunity_feedback'),
-                                                    self.client)
-        form_stream = OpportunityFormStream(self.config,
-                                                    self.state,
-                                                    child_streams.get('opportunity_forms'),
-                                                    self.client)
+
         # Set up looping parameters (page is for logging consistency)
         finished_paginating = False
         page = singer.bookmarks.get_bookmark(self.state, table, "next_page") or 1
@@ -86,37 +59,23 @@ class OpportunityStream(TimeRangeStream):
             data = self.get_stream_data(result['data'], transformer)
 
             LOGGER.info('Starting Opportunity child stream syncs')
-            for opportunity in data:
-                opportunity_id = opportunity['id']
-                # TODO: improve tap by using a dictionary
-                if child_streams.get('opportunity_applications'):
-                    applications_stream.write_schema()
-                    applications_stream.sync_data(opportunity_id)
-
-                if child_streams.get('opportunity_offers'):
-                    offers_stream.write_schema()
-                    offers_stream.sync_data(opportunity_id)
-
-                if child_streams.get('opportunity_referrals'):
-                    referrals_stream.write_schema()
-                    referrals_stream.sync_data(opportunity_id)
-
-                if child_streams.get('opportunity_resumes'):
-                    resumes_stream.write_schema()
-                    resumes_stream.sync_data(opportunity_id)
-
-                if child_streams.get('opportunity_feedback'):
-                    feedback_stream.write_schema()
-                    feedback_stream.sync_data(opportunity_id)
-
-                if child_streams.get('opportunity_forms'):
-                    form_stream.write_schema()
-                    form_stream.sync_data(opportunity_id)
+            tasks = []
+            async with aiohttp.ClientSession() as session:
+                for opportunity in data:
+                    opportunity["links"] = []
+                    opportunity_id = opportunity['id']
+                    if opportunity_id is None:
+                        LOGGER.info("oppurtunity id is null")
+                        continue
+                    for stream_name in child_streams:
+                        child_streams[stream_name].write_schema()
+                        task = asyncio.ensure_future(child_streams[stream_name].sync_data(opportunity_id, async_session=session))
+                        tasks.append(task)
+                responses_async = await asyncio.gather(*tasks)
 
             LOGGER.info('Finished Opportunity child stream syncs')
 
             with singer.metrics.record_counter(endpoint=table) as counter:
-                self.write_schema()
                 singer.write_records(table, data)
                 counter.increment(len(data))
 
@@ -152,7 +111,7 @@ class OpportunityStream(TimeRangeStream):
 
         params = self.get_params(updated_after, updated_before)
         url = self.get_url()
-        self.sync_paginated(url, params, updated_after, child_streams)
+        asyncio.run(self.sync_paginated(url, params, updated_after, child_streams))
 
         self.state = incorporate(self.state,
                                  table,

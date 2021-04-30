@@ -11,6 +11,8 @@ setup(name='tap-lever',
       py_modules=['tap_lever'],
       install_requires=[
           'tap-framework==0.0.5',
+          'aiohttp',
+          'tenacity'
       ],
       entry_points='''
           [console_scripts]

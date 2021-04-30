@@ -3,9 +3,13 @@ import singer
 import singer.metrics
 import backoff
 import functools
+import aiohttp
+import asyncio
+from tenacity import retry, wait_fixed
 
 LOGGER = singer.get_logger()  # noqa
 MAX_ERROR_RETRIES = 10
+
 
 class OffsetInvalidException(Exception):
     pass
@@ -26,7 +30,7 @@ def leaky_bucket_handler(details):
 
 def error_handling(fnc):
     @backoff.on_exception(backoff.expo,
-                          Exception,
+                          (Exception, RuntimeError, aiohttp.ClientError, aiohttp.ClientResponseError),
                           on_backoff=leaky_bucket_handler,
                           max_tries=MAX_ERROR_RETRIES,
                           # No jitter as we want a constant value
@@ -34,6 +38,19 @@ def error_handling(fnc):
     @functools.wraps(fnc)
     def wrapper(*args, **kwargs):
         return fnc(*args, **kwargs)
+
+    return wrapper
+
+
+def error_handling_async(fnc):
+    @backoff.on_exception(backoff.expo,
+                          (Exception, RuntimeError, aiohttp.ClientError, aiohttp.ClientResponseError),
+                          on_backoff=leaky_bucket_handler,
+                          # No jitter as we want a constant value
+                          jitter=None)
+    @functools.wraps(fnc)
+    async def wrapper(*args, **kwargs):
+        return await fnc(*args, **kwargs)
 
     return wrapper
 
@@ -67,3 +84,25 @@ class LeverClient:
             raise RuntimeError(response.text)
 
         return response.json()
+
+    @retry(wait=wait_fixed(2))
+    async def make_async_request(self, url, method, async_session, params=None, body=None):
+        LOGGER.info("Making {} request to {} ({})".format(method, url, params))
+        async with async_session.request(
+                method,
+                url,
+                headers={
+                    'Content-Type': 'application/json'
+                },
+                auth=aiohttp.BasicAuth(self.config['token'], ''),
+                params=params,
+                json=body) as response:
+            response_json = await response.json()
+            # NB: Observed - "Invalid offset token: Offset token is invalid for sort"
+            if response_json and "Invalid offset token" in response_json.get("message", ""):
+                raise OffsetInvalidException(response.text)
+
+            if response.status != 200:
+                LOGGER.warning("Got error code {} but retring".format(response.status))
+                raise RuntimeError(response.text)
+            return response_json

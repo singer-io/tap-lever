@@ -41,7 +41,7 @@ class LeverRunner(tap_framework.Runner):
                                                   'opportunity_feedback',
                                                   'opportunity_forms'}:
                         LOGGER.info('Will sync %s during the Opportunity stream sync', available_stream.TABLE)
-                        opportunity_child_catalogs[available_stream.TABLE] = stream_catalog
+                        opportunity_child_catalogs[available_stream.TABLE] = available_stream(self.config, self.state, stream_catalog, self.client)
                     else:
                         to_add = available_stream(self.config, self.state, stream_catalog, self.client)
 

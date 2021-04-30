@@ -13,7 +13,6 @@ from tap_lever.state import incorporate, save_state, \
 
 from tap_framework.streams import BaseStream as base
 
-
 LOGGER = singer.get_logger()
 
 
@@ -27,7 +26,7 @@ class BaseStream(base):
     def get_params(self, _next):
         params = {"limit": 100}
         if _next:
-             params["offset"] = _next
+            params["offset"] = _next
 
         return params
 
@@ -48,7 +47,7 @@ class BaseStream(base):
         save_state(self.state)
         return self.state
 
-    def sync_paginated(self, url, params=None):
+    def sync_paginated(self, url, params=None, async_session=None):
         table = self.TABLE
         _next = True
         page = 1
@@ -85,6 +84,7 @@ class BaseStream(base):
             transformer.transform(record, self.catalog.schema.to_dict(), metadata)
             for record in result
         ]
+
 
 class TimeRangeStream(BaseStream):
     RANGE_FIELD = 'updated_at'
@@ -140,3 +140,49 @@ class TimeRangeStream(BaseStream):
 
         save_state(self.state)
         return res
+
+
+class ChildAsync(BaseStream):
+    wrote_schema = False
+
+    async def sync_data(self, opportunity_id, async_session=None):
+        params = self.get_params(_next=None)
+        url = self.get_url(opportunity_id)
+        resources = await self.sync_paginated(url, params, async_session=async_session)
+        return resources
+
+    async def sync_paginated(self, url, params=None, async_session=None):
+        table = self.TABLE
+        _next = True
+        page = 1
+
+        all_resources = []
+        transformer = singer.Transformer(singer.UNIX_MILLISECONDS_INTEGER_DATETIME_PARSING)
+        while _next is not None:
+            if async_session != None:
+                result = await self.client.make_async_request(url, self.API_METHOD, async_session, params=params)
+            else:
+                result = self.client.make_request(url, self.API_METHOD, params=params)
+            _next = result.get('next')
+            # print(result['data'])
+            data = self.get_stream_data(result['data'], transformer)
+
+            with singer.metrics.record_counter(endpoint=table) as counter:
+                singer.write_records(
+                    table,
+                    data)
+                counter.increment(len(data))
+                all_resources.extend(data)
+
+            if _next:
+                params['offset'] = _next
+
+            LOGGER.info('Synced page {} for {}'.format(page, self.TABLE))
+            page += 1
+        transformer.log_warning()
+        return all_resources
+
+    def write_schema(self):
+        if not self.wrote_schema:
+            self.wrote_schema = True
+            super().write_schema()
