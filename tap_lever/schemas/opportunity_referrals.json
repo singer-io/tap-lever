@@ -121,7 +121,7 @@
       ],
       "format": "date-time"
     },
-    "opportunityId": {
+    "opportunity_id": {
       "type": "string"
     }
   }

@@ -25,7 +25,7 @@
       ],
       "properties": {}
     },
-    "opportunityId": {
+    "opportunity_id": {
       "type": "string"
     }
   }

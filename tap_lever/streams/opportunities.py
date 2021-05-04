@@ -9,9 +9,9 @@ from tap_lever.config import get_config_start_date
 from datetime import timedelta, datetime
 import pytz
 
-
 LOGGER = singer.get_logger()  # noqa
 import asyncio
+
 
 class OpportunityStream(TimeRangeStream):
     API_METHOD = "GET"
@@ -69,7 +69,8 @@ class OpportunityStream(TimeRangeStream):
                         continue
                     for stream_name in child_streams:
                         child_streams[stream_name].write_schema()
-                        task = asyncio.ensure_future(child_streams[stream_name].sync_data(opportunity_id, async_session=session))
+                        task = asyncio.ensure_future(
+                            child_streams[stream_name].sync_data(opportunity_id, async_session=session))
                         tasks.append(task)
                 responses_async = await asyncio.gather(*tasks)
 
@@ -132,6 +133,6 @@ class OpportunityStream(TimeRangeStream):
 
         while date < datetime.now(pytz.utc):
             self.sync_data_for_period(date, interval, child_streams)
-            date = date + interval
+            date = date + interval + timedelta(seconds=1)
 
         return self.state
