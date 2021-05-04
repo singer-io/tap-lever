@@ -139,6 +139,18 @@
         "null"
       ]
     },
+    "sourceBy": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "confidentiality": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "followers": {
       "type": [
         "null",
@@ -226,6 +238,13 @@
       ],
       "format": "date-time"
     },
+    "updatedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
     "lastInteractionAt": {
       "type": [
         "string",
@@ -252,14 +271,22 @@
         "null",
         "object"
       ],
-      "properties": {}
+      "properties": {
+        "list": {
+          "type": [
+            "null",
+            "string"
+          ]
+        }
+      }
     },
     "dataProtection": {
       "type": [
         "null",
         "object"
       ],
-      "properties": {}
+      "properties": {
+      }
     },
     "isAnonymized": {
       "type": [
