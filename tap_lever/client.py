@@ -89,7 +89,7 @@ class LeverClient:
 
         return response.json()
 
-    @retry(wait=wait_fixed(4), retry=retry_if_exception_type(RuntimeError), stop=stop_after_attempt(10))
+    @retry(wait=wait_fixed(4), retry=retry_if_exception_type(Exception), stop=stop_after_attempt(10))
     @retry(wait=wait_fixed(2), retry=retry_if_exception_type(ThrottledException))
     async def make_async_request(self, url, method, async_session, params=None, body=None):
         LOGGER.info("Making {} request to {} ({})".format(method, url, params))
@@ -111,6 +111,6 @@ class LeverClient:
                 raise ThrottledException(response.text)
 
             if response.status != 200:
-                LOGGER.warning("Got error code {} but retring".format(response.status))
+                LOGGER.warning("Got error code {} but retring {}".format(response.status, response.text))
                 raise RuntimeError(response.text)
             return response_json
