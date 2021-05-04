@@ -139,7 +139,7 @@
         "null"
       ]
     },
-    "sourceBy": {
+    "sourcedBy": {
       "type": [
         "string",
         "null"
