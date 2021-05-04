@@ -190,5 +190,5 @@ class ChildAsync(BaseStream):
 
     def add_parent_id(self, resources, id):
         for rec in resources:
-            rec["opportunityId"] = id
+            rec["opportunity_id"] = id
         return resources
