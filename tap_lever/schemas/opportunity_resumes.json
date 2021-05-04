@@ -5,16 +5,28 @@
       "type": "string"
     },
     "createdAt": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date-time"
     },
     "file": {
-      "type": ["object", "null"],
+      "type": [
+        "object",
+        "null"
+      ],
       "properties": {}
     },
     "parsedData": {
-      "type": ["object", "null"],
+      "type": [
+        "object",
+        "null"
+      ],
       "properties": {}
+    },
+    "opportunityId": {
+      "type": "string"
     }
   }
 }

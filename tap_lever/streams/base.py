@@ -149,6 +149,7 @@ class ChildAsync(BaseStream):
         params = self.get_params(_next=None)
         url = self.get_url(opportunity_id)
         resources = await self.sync_paginated(url, params, async_session=async_session)
+        resources = self.add_parent_id(resources, opportunity_id)
         return resources
 
     async def sync_paginated(self, url, params=None, async_session=None):
@@ -186,3 +187,8 @@ class ChildAsync(BaseStream):
         if not self.wrote_schema:
             self.wrote_schema = True
             super().write_schema()
+
+    def add_parent_id(self, resources, id):
+        for rec in resources:
+            rec["opportunityId"] = id
+        return resources

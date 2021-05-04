@@ -5,13 +5,22 @@
       "type": "string"
     },
     "type": {
-      "type": ["null", "string"]
+      "type": [
+        "null",
+        "string"
+      ]
     },
     "text": {
-      "type": ["null", "string"]
+      "type": [
+        "null",
+        "string"
+      ]
     },
     "instructions": {
-      "type": ["null", "string"]
+      "type": [
+        "null",
+        "string"
+      ]
     },
     "fields": {
       "type": "array",
@@ -19,30 +28,54 @@
         "type": "object",
         "properties": {
           "type": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "text": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "description": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "required": {
-            "type": ["null", "boolean"]
+            "type": [
+              "null",
+              "boolean"
+            ]
           },
           "value": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "prompt": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "options": {
-            "type": ["array", "null"],
+            "type": [
+              "array",
+              "null"
+            ],
             "items": {
               "type": "object",
               "properties": {
                 "text": {
-                  "type": ["null", "string"]
+                  "type": [
+                    "null",
+                    "string"
+                  ]
                 }
               }
             }
@@ -51,24 +84,45 @@
       }
     },
     "baseTemplateId": {
-      "type": ["null", "string"]
+      "type": [
+        "null",
+        "string"
+      ]
     },
     "user": {
-      "type": ["null", "string"]
+      "type": [
+        "null",
+        "string"
+      ]
     },
     "referrer": {
-      "type": ["null", "string"]
+      "type": [
+        "null",
+        "string"
+      ]
     },
     "stage": {
-      "type": ["null", "string"]
+      "type": [
+        "null",
+        "string"
+      ]
     },
     "createdAt": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date-time"
     },
     "completedAt": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date-time"
+    },
+    "opportunityId": {
+      "type": "string"
     }
   }
 }
