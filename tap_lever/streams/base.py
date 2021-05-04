@@ -148,11 +148,10 @@ class ChildAsync(BaseStream):
     async def sync_data(self, opportunity_id, async_session=None):
         params = self.get_params(_next=None)
         url = self.get_url(opportunity_id)
-        resources = await self.sync_paginated(url, params, async_session=async_session)
-        resources = self.add_parent_id(resources, opportunity_id)
+        resources = await self.sync_paginated(url, params, async_session=async_session, opportunity_id=opportunity_id)
         return resources
 
-    async def sync_paginated(self, url, params=None, async_session=None):
+    async def sync_paginated(self, url, params=None, async_session=None, opportunity_id=None):
         table = self.TABLE
         _next = True
         page = 1
@@ -167,7 +166,7 @@ class ChildAsync(BaseStream):
             _next = result.get('next')
             # print(result['data'])
             data = self.get_stream_data(result['data'], transformer)
-
+            data = self.add_parent_id(data, opportunity_id)
             with singer.metrics.record_counter(endpoint=table) as counter:
                 singer.write_records(
                     table,
