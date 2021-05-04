@@ -5,13 +5,17 @@ import backoff
 import functools
 import aiohttp
 import asyncio
-from tenacity import retry, wait_fixed
+from tenacity import retry, wait_fixed, retry_if_exception_type, stop_after_attempt
 
 LOGGER = singer.get_logger()  # noqa
 MAX_ERROR_RETRIES = 10
 
 
 class OffsetInvalidException(Exception):
+    pass
+
+
+class ThrottledException(Exception):
     pass
 
 
@@ -85,7 +89,8 @@ class LeverClient:
 
         return response.json()
 
-    @retry(wait=wait_fixed(2))
+    @retry(wait=wait_fixed(4), retry=retry_if_exception_type(RuntimeError), stop=stop_after_attempt(10))
+    @retry(wait=wait_fixed(2), retry=retry_if_exception_type(ThrottledException))
     async def make_async_request(self, url, method, async_session, params=None, body=None):
         LOGGER.info("Making {} request to {} ({})".format(method, url, params))
         async with async_session.request(
@@ -101,6 +106,9 @@ class LeverClient:
             # NB: Observed - "Invalid offset token: Offset token is invalid for sort"
             if response_json and "Invalid offset token" in response_json.get("message", ""):
                 raise OffsetInvalidException(response.text)
+            if response.status == 429:
+                LOGGER.warning("Got error code {} but retring".format(response.status))
+                raise ThrottledException(response.text)
 
             if response.status != 200:
                 LOGGER.warning("Got error code {} but retring".format(response.status))

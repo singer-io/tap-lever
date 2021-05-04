@@ -1,7 +1,7 @@
 import singer
 
 from tap_lever.streams import cache as stream_cache
-from tap_lever.streams.base import BaseStream
+from tap_lever.streams.base import BaseStream, ChildAsync
 
 LOGGER = singer.get_logger()  # noqa
 
@@ -38,7 +38,8 @@ class CandidateResumesStream(BaseStream):
                 else:
                     raise
 
-class OpportunityResumesStream(BaseStream):
+
+class OpportunityResumesStream(ChildAsync):
     API_METHOD = "GET"
     TABLE = "opportunity_resumes"
 
@@ -49,15 +50,3 @@ class OpportunityResumesStream(BaseStream):
     def get_url(self, opportunity):
         _path = self.path.format(opportunity_id=opportunity)
         return "https://api.lever.co/v1{}".format(_path)
-
-    def sync_data(self, opportunity_id):
-        url = self.get_url(opportunity_id)
-        try:
-            resources = self.sync_paginated(url)
-        except RuntimeError as e:
-            # There's a bug in the Lever API where a missing resume will result
-            # in a ResourceNotFound error instead of returning an empty response
-            if "ResourceNotFound" in str(e):
-                LOGGER.info("Opportunity %s does not have resumes", opportunity_id)
-            else:
-                raise

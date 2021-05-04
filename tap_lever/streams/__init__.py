@@ -20,13 +20,8 @@ from tap_lever.streams.feedback import OpportunityFeedbackStream
 from tap_lever.streams.forms import OpportunityFormStream
 
 AVAILABLE_STREAMS = [
-    CandidateStream,  # must sync first to fill CACHE
     OpportunityStream,  # must sync first to fill CACHE
     ArchiveReasonsStream,
-    CandidateApplicationsStream,
-    CandidateOffersStream,
-    CandidateReferralsStream,
-    CandidateResumesStream,
     OpportunityApplicationsStream,
     OpportunityOffersStream,
     OpportunityReferralsStream,
@@ -41,13 +36,8 @@ AVAILABLE_STREAMS = [
 ]
 
 __all__ = [
-    "CandidateStream",
     "OpportunityStream",
     "ArchiveReasonsStream",
-    "CandidateApplicationsStream",
-    "CandidateOffersStream",
-    "CandidateReferralsStream",
-    "CandidateResumesStream",
     "OpportunityApplicationsStream",
     "OpportunityOffersStream",
     "OpportunityReferralsStream",
