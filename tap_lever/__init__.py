@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import json
+import sys
 
 import singer
 
@@ -65,6 +67,23 @@ class LeverRunner(tap_framework.Runner):
                 stream.sync()
             self.state = stream.state
         save_state(self.state)
+
+
+    def do_discover(self):
+        LOGGER.info("Starting discovery.")
+
+        catalog = []
+
+        for available_stream in self.available_streams:
+            stream = available_stream(self.config, self.state, None, None)
+            catalog = stream.generate_catalog()
+            mdata = singer.metadata.to_map(catalog["metadata"])
+            mdata = mdata.write(mdata, (), 'table-key-properties', stream.KEY_PROPERTIES)
+            mdata = mdata.write(mdata, (), 'forced-replication-method', stream.replication_method)
+
+            catalog += stream.generate_catalog()
+
+        json.dump({'streams': catalog}, sys.stdout, indent=4)
 
 
 @singer.utils.handle_top_exception(LOGGER)
