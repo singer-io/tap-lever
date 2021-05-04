@@ -17,15 +17,11 @@ from tap_lever.streams.sources import SourcesStream
 from tap_lever.streams.stages import StagesStream
 from tap_lever.streams.users import UsersStream
 from tap_lever.streams.feedback import OpportunityFeedbackStream
+from tap_lever.streams.forms import OpportunityFormStream
 
 AVAILABLE_STREAMS = [
-    CandidateStream,  # must sync first to fill CACHE
     OpportunityStream,  # must sync first to fill CACHE
     ArchiveReasonsStream,
-    CandidateApplicationsStream,
-    CandidateOffersStream,
-    CandidateReferralsStream,
-    CandidateResumesStream,
     OpportunityApplicationsStream,
     OpportunityOffersStream,
     OpportunityReferralsStream,
@@ -35,17 +31,13 @@ AVAILABLE_STREAMS = [
     SourcesStream,
     StagesStream,
     UsersStream,
-    OpportunityFeedbackStream
+    OpportunityFeedbackStream,
+    OpportunityFormStream,
 ]
 
 __all__ = [
-    "CandidateStream",
     "OpportunityStream",
     "ArchiveReasonsStream",
-    "CandidateApplicationsStream",
-    "CandidateOffersStream",
-    "CandidateReferralsStream",
-    "CandidateResumesStream",
     "OpportunityApplicationsStream",
     "OpportunityOffersStream",
     "OpportunityReferralsStream",
@@ -55,5 +47,6 @@ __all__ = [
     "SourcesStream",
     "StagesStream",
     "UsersStream",
-    "OpportunityFeedbackStream"
+    "OpportunityFeedbackStream",
+    "OpportunityFormStream"
 ]
