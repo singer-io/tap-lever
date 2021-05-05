@@ -13,6 +13,12 @@
         "string"
       ]
     },
+    "user_id": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
     "text": {
       "type": [
         "null",
