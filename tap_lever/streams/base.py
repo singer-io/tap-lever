@@ -18,6 +18,7 @@ LOGGER = singer.get_logger()
 
 class BaseStream(base):
     KEY_PROPERTIES = ['id']
+    REPLICATION_METHOD = 'FULL_TABLE'
     CACHE_RESULTS = False
 
     def get_url(self):
@@ -144,6 +145,7 @@ class TimeRangeStream(BaseStream):
 
 class ChildAsync(BaseStream):
     wrote_schema = False
+    REPLICATION_METHOD = "INCREMENTAL"
 
     async def sync_data(self, opportunity_id, async_session=None):
         params = self.get_params(_next=None)

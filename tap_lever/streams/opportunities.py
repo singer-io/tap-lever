@@ -18,6 +18,7 @@ class OpportunityStream(TimeRangeStream):
     TABLE = "opportunities"
     KEY_PROPERTIES = ["id"]
     EXPAND = ["applications"]
+    REPLICATION_METHOD = "INCREMENTAL"
 
     @property
     def path(self):
@@ -99,11 +100,14 @@ class OpportunityStream(TimeRangeStream):
         self.state = singer.bookmarks.clear_bookmark(self.state, table, "next_page")
         save_state(self.state)
 
-    def sync_data_for_period(self, date, interval, child_streams=None):
+    def sync_data_for_period(self, date, interval, child_streams=None, stop_time=None):
         table = self.TABLE
 
         updated_after = date
         updated_before = updated_after + interval
+
+        if stop_time is not None and updated_before > stop_time:
+            updated_before = stop_time
 
         LOGGER.info(
             'Syncing data from {} to {}'.format(
@@ -117,7 +121,7 @@ class OpportunityStream(TimeRangeStream):
         self.state = incorporate(self.state,
                                  table,
                                  self.RANGE_FIELD,
-                                 date.isoformat())
+                                 updated_before.isoformat())
 
         save_state(self.state)
 
@@ -130,9 +134,10 @@ class OpportunityStream(TimeRangeStream):
             date = get_config_start_date(self.config)
 
         interval = timedelta(days=1)
+        stop_time = singer.utils.now().replace(microsecond=0)
 
-        while date < datetime.now(pytz.utc):
-            self.sync_data_for_period(date, interval, child_streams)
+        while date < stop_time:
+            self.sync_data_for_period(date, interval, child_streams, stop_time=stop_time)
             date = date + interval + timedelta(seconds=1)
 
         return self.state

@@ -68,7 +68,6 @@ class LeverRunner(tap_framework.Runner):
             self.state = stream.state
         save_state(self.state)
 
-
     def do_discover(self):
         LOGGER.info("Starting discovery.")
 
@@ -76,15 +75,16 @@ class LeverRunner(tap_framework.Runner):
 
         for available_stream in self.available_streams:
             stream = available_stream(self.config, self.state, None, None)
-            catalog = stream.generate_catalog()
-            mdata = singer.metadata.to_map(catalog["metadata"])
-            mdata = mdata.write(mdata, (), 'table-key-properties', stream.KEY_PROPERTIES)
-            mdata = mdata.write(mdata, (), 'forced-replication-method', stream.replication_method)
+            stream_cat = stream.generate_catalog()[0]
+            metadata = singer.metadata.to_map(stream_cat["metadata"])
+            metadata =singer.metadata.write(metadata, (), 'forced-replication-method', stream.REPLICATION_METHOD)
+            metadata =singer.metadata.write(metadata, (), 'table-key-properties', stream.KEY_PROPERTIES)
 
-            catalog += stream.generate_catalog()
+            stream_cat["replication_method"] = stream.REPLICATION_METHOD
+            stream_cat["metadata"] = singer.metadata.to_list(metadata)
+            catalog += [stream_cat]
 
         json.dump({'streams': catalog}, sys.stdout, indent=4)
-
 
 @singer.utils.handle_top_exception(LOGGER)
 def main():
