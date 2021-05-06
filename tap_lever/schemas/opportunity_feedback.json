@@ -13,7 +13,7 @@
         "string"
       ]
     },
-    "user_id": {
+    "user": {
       "type": [
         "null",
         "string"
