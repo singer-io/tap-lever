@@ -43,7 +43,6 @@ class OpportunityStream(TimeRangeStream):
         page = singer.bookmarks.get_bookmark(self.state, table, "next_page") or 1
         _next = singer.bookmarks.get_bookmark(self.state, table, "offset")
         params["expand"] = self.EXPAND
-        params["archived"] = child_streams is None
         if _next:
             params['offset'] = _next
 
