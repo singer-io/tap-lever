@@ -8,3 +8,5 @@ singer-check-tap-data
 dist/
 get_catalog.py
 env/
+venv
+.idea

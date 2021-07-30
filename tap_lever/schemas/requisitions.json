@@ -35,7 +35,23 @@
         "owner": {
             "type": ["string", "null"]
         },
-        "compensationBand": {},
+        "compensationBand": {
+            "type": ["null", "object"],
+            "properties": {
+                "currency": {
+                    "type": ["string", "null"]
+                },
+                "interval": {
+                    "type": ["string", "null"]
+                },
+                "min": {
+                    "type": ["number", "null"]
+                },
+                "max": {
+                    "type": ["number", "null"]
+                }
+            }
+        },
         "employmentStatus": {
             "type": ["string", "null"]
         },
@@ -63,6 +79,8 @@
                 "type": "string"
             }
         },
-        "customFields": {}
+        "customFields": {
+            "type": ["null", "string"]
+        }
     }
 }

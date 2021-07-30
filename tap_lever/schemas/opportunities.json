@@ -33,7 +33,39 @@
         "null",
         "array"
       ],
-      "items": {}
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "toStageId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "toStageIndex": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "userId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
     },
     "location": {
       "type": [
@@ -277,16 +309,20 @@
             "null",
             "string"
           ]
+        },
+        "show": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     },
     "dataProtection": {
       "type": [
         "null",
-        "object"
-      ],
-      "properties": {
-      }
+        "string"
+      ]
     },
     "isAnonymized": {
       "type": [

@@ -46,15 +46,181 @@
         "number"
       ]
     },
-    "phone": {},
-    "company": {},
-    "links": {},
-    "comments": {},
-    "resume": {},
-    "customQuestions": {},
-    "archived": {},
-    "postingHiringManager": {},
-    "postingOwner": {},
-    "requisitionForHire": {}
+    "phone": {
+      "type": [
+        "null",
+        "object"
+      ],
+      "properties": {
+        "type": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "value": {
+          "type": [
+            "null",
+            "string"
+          ]
+        }
+      }
+    },
+    "company": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "links": {
+      "type": [
+        "null",
+        "array"
+      ],
+      "items": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "comments": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "resume": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "customQuestions": {
+      "type": [
+        "null",
+        "array"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "text": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instructions": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "baseTemplateId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fields": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "referrer": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "user": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "stage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "completedAt": {
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      }
+    },
+    "archived": {
+      "type": ["null", "object"],
+      "properties": {
+        "archivedAt": {
+          "type": [
+            "null",
+            "number"
+          ]
+        },
+        "reason": {
+          "type": [
+            "null",
+            "string"
+          ]
+        }
+      }
+    },
+    "postingHiringManager": {
+      "type": ["null", "string"]
+    },
+    "postingOwner": {
+      "type": ["null", "string"]
+    },
+    "requisitionForHire": {
+      "type": ["null", "object"],
+      "properties": {
+        "id": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "requisitionCode": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "hiringManagerOnHire": {
+          "type": [
+            "null",
+            "string"
+          ]
+        }
+      }
+    }
   }
 }

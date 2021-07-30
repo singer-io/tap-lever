@@ -18,7 +18,24 @@
     },
     "stageChanges": {
       "type": ["null", "array"],
-      "items": {}
+      "items": {
+        "type": ["object", "null"],
+        "properties": {
+          "toStageId": {
+            "type": ["string", "null"]
+          },
+          "toStageIndex": {
+            "type": ["number", "null"]
+          },
+          "updatedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "userId": {
+            "type": ["string", "null"]
+          }
+        }
+      }
     },
     "location": {
       "type": ["string", "null"]
@@ -92,8 +109,7 @@
       }
     },
     "resume": {
-      "type": ["null", "object"],
-      "properties": {}
+      "type": ["null", "string"]
     },
     "createdAt": {
       "type": ["string", "null"],
@@ -113,11 +129,17 @@
     },
     "urls": {
       "type": ["null", "object"],
-      "properties": {}
+      "properties": {
+        "list": {
+          "type": ["string", "null"]
+        },
+        "show": {
+          "type": ["string", "null"]
+        }
+      }
     },
     "dataProtection": {
-      "type": ["null", "object"],
-      "properties": {}
+      "type": ["null", "string"],
     },
     "isAnonymized": {
       "type": ["null", "boolean"]

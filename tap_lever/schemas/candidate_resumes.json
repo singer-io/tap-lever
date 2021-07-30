@@ -9,12 +9,68 @@
       "format": "date-time"
     },
     "file": {
-      "type": ["object", "null"],
-      "properties": {}
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ext": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "downloadUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "uploadedAt": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "size": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      }
     },
     "parsedData": {
-      "type": ["object", "null"],
-      "properties": {}
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "positions": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "schools": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
     }
   }
 }

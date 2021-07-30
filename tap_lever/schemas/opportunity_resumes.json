@@ -16,14 +16,64 @@
         "object",
         "null"
       ],
-      "properties": {}
+      "properties": {
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ext": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "downloadUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "uploadedAt": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "size": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      }
     },
     "parsedData": {
       "type": [
         "object",
         "null"
       ],
-      "properties": {}
+      "properties": {
+        "positions": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "schools": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
     },
     "opportunity_id": {
       "type": "string"
