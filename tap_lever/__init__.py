@@ -3,13 +3,12 @@ import json
 import sys
 
 import singer
-
 import tap_framework
-from tap_framework.streams import is_selected
+from tap_framework import is_selected
 
 from tap_lever.client import LeverClient
-from tap_lever.streams import AVAILABLE_STREAMS
 from tap_lever.state import save_state
+from tap_lever.streams import AVAILABLE_STREAMS
 
 LOGGER = singer.get_logger()  # noqa
 
@@ -77,14 +76,15 @@ class LeverRunner(tap_framework.Runner):
             stream = available_stream(self.config, self.state, None, None)
             stream_cat = stream.generate_catalog()[0]
             metadata = singer.metadata.to_map(stream_cat["metadata"])
-            metadata =singer.metadata.write(metadata, (), 'forced-replication-method', stream.REPLICATION_METHOD)
-            metadata =singer.metadata.write(metadata, (), 'table-key-properties', stream.KEY_PROPERTIES)
+            metadata = singer.metadata.write(metadata, (), 'forced-replication-method', stream.REPLICATION_METHOD)
+            metadata = singer.metadata.write(metadata, (), 'table-key-properties', stream.KEY_PROPERTIES)
 
             stream_cat["replication_method"] = stream.REPLICATION_METHOD
             stream_cat["metadata"] = singer.metadata.to_list(metadata)
-            catalog += [stream_cat]
+            catalog.append(stream_cat)
 
         json.dump({'streams': catalog}, sys.stdout, indent=4)
+
 
 @singer.utils.handle_top_exception(LOGGER)
 def main():
