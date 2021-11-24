@@ -134,8 +134,48 @@
           "fields": {
             "type": [
               "null",
-              "string"
-            ]
+              "array"
+            ],
+            "items": {
+              "type": ["null", "object"],
+              "properties": {
+                "id": {
+                  "type": ["null", "string"]
+                },
+                "prompt": {
+                  "type": ["null", "string"]
+                },
+                "type": {
+                  "type": ["null", "string"]
+                },
+                "text": {
+                  "type": ["null", "string"]
+                },
+                "description": {
+                  "type": ["null", "string"]
+                },
+                "required": {
+                  "type": ["null", "boolean"]
+                },
+                "options": {
+                  "type": ["null", "array"],
+                  "items": {
+                    "type": ["null", "object"],
+                    "properties": {
+                      "text": {
+                        "type": ["null", "string"]
+                      },
+                      "optionId": {
+                        "type": ["null", "string"]
+                      }
+                    }
+                  }
+                },
+                "value": {
+                  "type": ["null", "string"]
+                }
+              }
+            }
           },
           "referrer": {
             "type": [
