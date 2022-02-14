@@ -60,9 +60,9 @@ class OpportunityStream(TimeRangeStream):
 
             LOGGER.info('Starting Opportunity child stream syncs')
             tasks = []
-            async with aiohttp.ClientSession() as session:
+            connector = aiohttp.TCPConnector(limit=25)
+            async with aiohttp.ClientSession(connector=connector) as session:
                 for opportunity in data:
-                    opportunity["links"] = []
                     opportunity_id = opportunity['id']
                     if opportunity_id is None:
                         LOGGER.info("oppurtunity id is null")
