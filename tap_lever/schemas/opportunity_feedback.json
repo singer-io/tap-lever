@@ -124,6 +124,12 @@
         "null",
         "number"
       ]
+    },
+    "deletedAt": {
+      "type": [
+        "null",
+        "number"
+      ]
     }
   }
 }
