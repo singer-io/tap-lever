@@ -37,9 +37,10 @@
         },
         "uploadedAt": {
           "type": [
-            "number",
+            "string",
             "null"
-          ]
+          ],
+          "format": "date-time"
         },
         "status": {
           "type": [

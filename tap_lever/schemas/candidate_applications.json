@@ -40,8 +40,9 @@
     "createdAt": {
       "type": [
         "null",
-        "number"
-      ]
+        "string"
+      ],
+      "format": "date-time"
     },
     "company": {
       "type": [

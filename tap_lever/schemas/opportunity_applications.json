@@ -198,14 +198,16 @@
           "createdAt": {
             "type": [
               "null",
-              "number"
-            ]
+              "string"
+            ],
+            "format": "date-time"
           },
           "completedAt": {
             "type": [
               "null",
-              "number"
-            ]
+              "string"
+            ],
+            "format": "date-time"
           },
           "type": {
             "type": [
@@ -222,8 +224,9 @@
         "archivedAt": {
           "type": [
             "null",
-            "number"
-          ]
+            "string"
+          ],
+          "format": "date-time"
         },
         "reason": {
           "type": [
