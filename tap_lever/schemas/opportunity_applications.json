@@ -42,9 +42,10 @@
     },
     "createdAt": {
       "type": [
-        "null",
-        "number"
-      ]
+              "string",
+              "null"
+            ],
+            "format": "date-time"
     },
     "phone": {
       "type": [
