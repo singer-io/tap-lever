@@ -10,4 +10,4 @@ class UsersStream(BaseStream):
 
     @property
     def path(self):
-        return "/users"
+        return "/users?includeDeactivated=true"
