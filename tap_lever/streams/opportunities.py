@@ -60,7 +60,8 @@ class OpportunityStream(TimeRangeStream):
 
             LOGGER.info('Starting Opportunity child stream syncs')
             tasks = []
-            connector = aiohttp.TCPConnector(limit=25)
+            # add ssl=False to overcome SSL CERTIFICATE_VERIFY_FAILED error
+            connector = aiohttp.TCPConnector(ssl=False, limit=25)
             async with aiohttp.ClientSession(connector=connector) as session:
                 for opportunity in data:
                     opportunity_id = opportunity['id']

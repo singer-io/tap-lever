@@ -19,6 +19,7 @@ from tap_lever.streams.users import UsersStream
 from tap_lever.streams.feedback import OpportunityFeedbackStream
 from tap_lever.streams.forms import OpportunityFormStream
 from tap_lever.streams.feedback_templates import FeedbackTemplatesStream
+from tap_lever.streams.notes import OpportunityNotesStream
 
 AVAILABLE_STREAMS = [
     OpportunityStream,  # must sync first to fill CACHE
@@ -34,6 +35,7 @@ AVAILABLE_STREAMS = [
     UsersStream,
     OpportunityFeedbackStream,
     OpportunityFormStream,
+    OpportunityNotesStream,
     FeedbackTemplatesStream,
 ]
 
@@ -50,5 +52,6 @@ __all__ = [
     "StagesStream",
     "UsersStream",
     "OpportunityFeedbackStream",
-    "OpportunityFormStream"
+    "OpportunityFormStream",
+    "OpportunityNotesStream"
 ]
