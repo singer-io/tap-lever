@@ -4,6 +4,9 @@
     "id": {
       "type": "string"
     },
+    "opportunity_id": {
+      "type": "string"
+    },
     "text": {
       "type": [
         "null",
