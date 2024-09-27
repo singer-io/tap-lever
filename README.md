@@ -2,13 +2,13 @@
 
 Author: Drew Banin (drew@fishtownanalytics.com)
 
-This is a [Singer](http://singer.io) tap that produces JSON-formatted data following the [Singer spec](https://github.com/singer-io/getting-started/blob/master/SPEC.md) for the [Lever API](https://hire.lever.co/developer/documentation).
+This is a [Singer](http://singer.io) tap that produces JSON-formatted data following the [Singer spec](https://github.com/singer-io/getting-started/blob/master/docs/SPEC.md) for the [Lever API](https://hire.lever.co/developer/documentation).
 
 It:
 - Generates a catalog of available data in Lever
 - Extracts the following resources:
   - candidates
-  - archive resons
+  - archive reasons
   - applications
   - offers
   - opportunities
