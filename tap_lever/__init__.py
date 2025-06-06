@@ -2,6 +2,7 @@
 
 import json
 import singer
+import sys
 
 from tap_lever.client import LeverClient
 from tap_lever.streams import AVAILABLE_STREAMS
