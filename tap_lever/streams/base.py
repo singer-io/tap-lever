@@ -1,4 +1,6 @@
+import inspect
 import math
+import os
 import pytz
 import singer
 import singer.utils
@@ -11,15 +13,127 @@ from tap_lever.config import get_config_start_date
 from tap_lever.state import incorporate, save_state, \
     get_last_record_value_for_table
 
-from tap_framework.streams import BaseStream as base
-
 
 LOGGER = singer.get_logger()
 
 
-class BaseStream(base):
+def is_selected(stream_catalog):
+    metadata = singer.metadata.to_map(stream_catalog.metadata)
+    stream_metadata = metadata.get((), {})
+
+    inclusion = stream_metadata.get('inclusion')
+
+    if stream_metadata.get('selected') is not None:
+        selected = stream_metadata.get('selected')
+    else:
+        selected = stream_metadata.get('selected-by-default')
+
+    if inclusion == 'unsupported':
+        return False
+
+    elif selected is not None:
+        return selected
+
+    return inclusion == 'automatic'
+
+
+class BaseStream:
     KEY_PROPERTIES = ['id']
     CACHE_RESULTS = False
+    TABLE = None
+    API_METHOD = 'GET'
+    REQUIRES = []
+
+    def __init__(self, config, state, catalog, client):
+        self.config = config
+        self.state = state
+        self.catalog = catalog
+        self.client = client
+        self.substreams = []
+
+    def get_class_path(self):
+        return os.path.dirname(inspect.getfile(self.__class__))
+
+    def load_schema_by_name(self, name):
+        return singer.utils.load_json(
+            os.path.normpath(
+                os.path.join(
+                    self.get_class_path(),
+                    '../schemas/{}.json'.format(name))))
+
+    def get_schema(self):
+        return self.load_schema_by_name(self.TABLE)
+
+    @classmethod
+    def requirements_met(cls, catalog):
+        selected_streams = [
+            s.stream for s in catalog.streams if is_selected(s)
+        ]
+
+        return set(cls.REQUIRES).issubset(selected_streams)
+
+    @classmethod
+    def matches_catalog(cls, stream_catalog):
+        return stream_catalog.stream == cls.TABLE
+
+    def generate_catalog(self):
+        schema = self.get_schema()
+        mdata = singer.metadata.new()
+
+        mdata = singer.metadata.write(
+            mdata,
+            (),
+            'inclusion',
+            'available'
+        )
+
+        for field_name, field_schema in schema.get('properties').items():
+            inclusion = 'available'
+
+            if field_name in self.KEY_PROPERTIES:
+                inclusion = 'automatic'
+
+            mdata = singer.metadata.write(
+                mdata,
+                ('properties', field_name),
+                'inclusion',
+                inclusion
+            )
+
+        return [{
+            'tap_stream_id': self.TABLE,
+            'stream': self.TABLE,
+            'key_properties': self.KEY_PROPERTIES,
+            'schema': self.get_schema(),
+            'metadata': singer.metadata.to_list(mdata)
+        }]
+
+    def transform_record(self, record):
+        with singer.Transformer() as tx:
+            metadata = {}
+
+            if self.catalog.metadata is not None:
+                metadata = singer.metadata.to_map(self.catalog.metadata)
+
+            return tx.transform(
+                record,
+                self.catalog.schema.to_dict(),
+                metadata)
+
+    def write_schema(self):
+        singer.write_schema(
+            self.catalog.stream,
+            self.catalog.schema.to_dict(),
+            key_properties=self.catalog.key_properties)
+
+    def sync(self):
+        LOGGER.info('Syncing stream {} with {}'
+                    .format(self.catalog.tap_stream_id,
+                            self.__class__.__name__))
+
+        self.write_schema()
+
+        return self.sync_data()
 
     def get_url(self):
         return 'https://api.lever.co/v1{}'.format(self.path)

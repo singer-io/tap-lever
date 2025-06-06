@@ -10,7 +10,9 @@ setup(name='tap-lever',
       classifiers=['Programming Language :: Python :: 3 :: Only'],
       py_modules=['tap_lever'],
       install_requires=[
-          'tap-framework==0.0.5',
+          'singer-python==6.1.1',
+          'backoff==2.2.1',
+          'requests==2.32.3',
       ],
       entry_points='''
           [console_scripts]
