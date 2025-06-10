@@ -7,7 +7,7 @@ import sys
 from tap_lever.client import LeverClient
 from tap_lever.streams import AVAILABLE_STREAMS
 from tap_lever.state import save_state
-from tap_lever.streams.base import is_selected
+from tap_lever.streams.base import is_stream_selected
 
 LOGGER = singer.get_logger()  # noqa
 
@@ -28,7 +28,7 @@ class LeverRunner:
             return streams
 
         for stream_catalog in self.catalog.streams:
-            if not is_selected(stream_catalog):
+            if not is_stream_selected(stream_catalog):
                 LOGGER.info("'{}' is not marked selected, skipping."
                             .format(stream_catalog.stream))
                 continue
@@ -90,7 +90,7 @@ class LeverRunner:
         if not self.catalog:
             return streams, opportunity_child_catalogs
         for stream_catalog in self.catalog.streams:
-            if not is_selected(stream_catalog):
+            if not is_stream_selected(stream_catalog):
                 LOGGER.info("'{}' is not marked selected, skipping."
                             .format(stream_catalog.stream))
                 continue

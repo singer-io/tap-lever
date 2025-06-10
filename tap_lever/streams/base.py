@@ -8,6 +8,7 @@ import singer.metrics
 
 from datetime import timedelta, datetime
 
+from singer import metadata as meta
 from tap_lever.streams import cache as stream_cache
 from tap_lever.config import get_config_start_date
 from tap_lever.state import incorporate, save_state, \
@@ -17,21 +18,14 @@ from tap_lever.state import incorporate, save_state, \
 LOGGER = singer.get_logger()
 
 
-def is_selected(stream_catalog):
-    metadata = singer.metadata.to_map(stream_catalog.metadata)
-    stream_metadata = metadata.get((), {})
+def is_stream_selected(stream):
+    stream_metadata = meta.to_map(stream.metadata)
 
-    inclusion = stream_metadata.get('inclusion')
-
-    if stream_metadata.get('selected') is not None:
-        selected = stream_metadata.get('selected')
-    else:
-        selected = stream_metadata.get('selected-by-default')
-
+    selected = meta.get(stream_metadata, (), 'selected')
+    inclusion = meta.get(stream_metadata, (), 'inclusion')
     if inclusion == 'unsupported':
         return False
-
-    elif selected is not None:
+    if selected is not None:
         return selected
 
     return inclusion == 'automatic'
@@ -67,7 +61,7 @@ class BaseStream:
     @classmethod
     def requirements_met(cls, catalog):
         selected_streams = [
-            s.stream for s in catalog.streams if is_selected(s)
+            s.stream for s in catalog.streams if is_stream_selected(s)
         ]
 
         return set(cls.REQUIRES).issubset(selected_streams)
