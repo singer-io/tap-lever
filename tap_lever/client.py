@@ -1,6 +1,9 @@
+import backoff
 import requests
 import singer
 import singer.metrics
+
+from requests.exceptions import ConnectionError, HTTPError
 
 LOGGER = singer.get_logger()  # noqa
 
@@ -20,6 +23,15 @@ class LeverClient:
     def __init__(self, config):
         self.config = config
 
+    @backoff.on_exception(
+        backoff.expo,
+        (
+            ConnectionError,
+            HTTPError,
+        ),
+        max_tries=5,
+        factor=2,
+    )
     def make_request(self, url, method, params=None, body=None):
         LOGGER.info("Making {} request to {} ({})".format(method, url, params))
 
