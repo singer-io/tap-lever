@@ -102,18 +102,6 @@ class BaseStream:
             'metadata': singer.metadata.to_list(mdata)
         }]
 
-    def transform_record(self, record):
-        with singer.Transformer() as tx:
-            metadata = {}
-
-            if self.catalog.metadata is not None:
-                metadata = singer.metadata.to_map(self.catalog.metadata)
-
-            return tx.transform(
-                record,
-                self.catalog.schema.to_dict(),
-                metadata)
-
     def write_schema(self):
         singer.write_schema(
             self.catalog.stream,
