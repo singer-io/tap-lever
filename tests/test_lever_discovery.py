@@ -52,6 +52,7 @@ class LeverDiscovery(unittest.TestCase):
             'users'
         }
 
+
     # Note:
     # Integration tests are currently commented out in `.circleci/config.yml` to avoid execution.
     # This is a known backlog task and will be addressed in the future.
