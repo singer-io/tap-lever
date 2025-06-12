@@ -14,6 +14,11 @@ setup(name='tap-lever',
           'backoff==2.2.1',
           'requests==2.32.3',
       ],
+      extras_require = {
+        "dev": [
+          "nose",
+        ],
+      },
       entry_points='''
           [console_scripts]
           tap-lever=tap_lever:main
