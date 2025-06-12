@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
+import requests
 import time
 
 from tap_lever.client import (
