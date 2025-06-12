@@ -32,8 +32,8 @@ class LeverClient:
     MAX_TRIES = 5
 
     def __init__(self, config):
-        self.config = config
         self._retry_after = RETRY_RATE_LIMIT
+        self.config = config
 
     def _rate_limit_backoff(self):
         """
@@ -52,7 +52,7 @@ class LeverClient:
         )
         @backoff.on_exception(
             backoff.expo,
-            (ConnectionError, Server5xxError),
+            (Server5xxError, ConnectionError),
             max_tries=self.MAX_TRIES,
         )
         def _call():
@@ -74,7 +74,7 @@ class LeverClient:
             if response_json and "Invalid offset token" in response_json.get("message", ""):
                 raise OffsetInvalidException(resp.text)
 
-            if resp.status_code >= 500 and resp.status_code < 600:
+            if 500 <= resp.status_code < 600:
                 raise Server5xxError()
             elif resp.status_code == 429:
                 try:
