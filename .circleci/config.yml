@@ -18,6 +18,11 @@ jobs:
           command: |
             source /usr/local/share/virtualenvs/tap-tester/bin/activate
             stitch-validate-json tap_lever/schemas/*.json
+      - run:
+          name: 'Unit Tests'
+          command: |
+            source /usr/local/share/virtualenvs/tap-lever/bin/activate
+            nosetests tests
       # TODO Get this test running
       #      (https://stitchdata.atlassian.net/browse/SRCE-4775)
       # - run:
