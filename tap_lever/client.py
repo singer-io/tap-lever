@@ -43,6 +43,38 @@ class LeverClient:
         while True:
             yield self._retry_after
 
+    def _make_request_once(self, url, method, params=None, body=None):
+        LOGGER.info("Making {} request to {} ({})".format(method, url, params))
+
+        resp = requests.request(
+            method,
+            url,
+            headers={'Content-Type': 'application/json'},
+            auth=(self.config['token'], ''),
+            params=params,
+            json=body,
+        )
+
+        response_json = safe_json_parse(resp)
+
+        if response_json and "Invalid offset token" in response_json.get("message", ""):
+            raise OffsetInvalidException(resp.text)
+
+        if 500 <= resp.status_code < 600:
+            raise Server5xxError()
+        elif resp.status_code == 429:
+            try:
+                self._retry_after = int(
+                    float(resp.headers.get("X-RateLimit-Reset", RETRY_RATE_LIMIT))
+                )
+            except (TypeError, ValueError):
+                self._retry_after = RETRY_RATE_LIMIT
+            raise Server429Error()
+        elif resp.status_code != 200:
+            raise RuntimeError(resp.text)
+
+        return resp
+
     def make_request(self, url, method, params=None, body=None):
         @backoff.on_exception(
             self._rate_limit_backoff,
@@ -55,39 +87,8 @@ class LeverClient:
             (Server5xxError, ConnectionError),
             max_tries=self.MAX_TRIES,
         )
-        def _call():
-            LOGGER.info("Making {} request to {} ({})".format(method, url, params))
+        def wrapped_call():
+            return self._make_request_once(url, method, params, body)
 
-            resp = requests.request(
-                method,
-                url,
-                headers={
-                    'Content-Type': 'application/json',
-                },
-                auth=(self.config['token'], ''),
-                params=params,
-                json=body,
-            )
-
-            response_json = safe_json_parse(resp)
-            # NB: Observed - "Invalid offset token: Offset token is invalid for sort"
-            if response_json and "Invalid offset token" in response_json.get("message", ""):
-                raise OffsetInvalidException(resp.text)
-
-            if 500 <= resp.status_code < 600:
-                raise Server5xxError()
-            elif resp.status_code == 429:
-                try:
-                    self._retry_after = int(
-                        float(resp.headers.get("X-RateLimit-Reset", RETRY_RATE_LIMIT))
-                    )
-                except (TypeError, ValueError):
-                    self._retry_after = RETRY_RATE_LIMIT
-                raise Server429Error()
-            elif resp.status_code != 200:
-                raise RuntimeError(resp.text)
-
-            return resp
-
-        response = _call()
+        response = wrapped_call()
         return response.json()
