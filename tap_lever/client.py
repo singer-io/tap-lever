@@ -27,6 +27,10 @@ class LeverClient:
     def __init__(self, config):
         self.config = config
 
+    # 429 Too Many Requests: Apply backoff strategy to handle rate limiting.
+    # Lever API uses a token bucket algorithm to enforce rate limits, capping requests per second.
+    # Implementing exponential backoff ensures compliance with these limits and avoids request throttling.
+    # Reference: https://hire.lever.co/developer/documentation#rate-limits
     @backoff.on_exception(
         backoff.expo,
         (Server5xxError, Server429Error, ConnectionError),
