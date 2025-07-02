@@ -12,7 +12,7 @@ setup(name='tap-lever',
       install_requires=[
           'singer-python==6.1.1',
           'backoff==2.2.1',
-          'requests==2.32.3',
+          'requests==2.32.4',
       ],
       extras_require = {
         "dev": [
