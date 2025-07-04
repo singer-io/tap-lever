@@ -20,14 +20,10 @@ LOGGER = singer.get_logger()
 
 def is_stream_selected(stream):
     stream_metadata = meta.to_map(stream.metadata)
-
     selected = meta.get(stream_metadata, (), 'selected')
     inclusion = meta.get(stream_metadata, (), 'inclusion')
-    if inclusion == 'unsupported':
-        return False
     if selected is not None:
         return selected
-
     return inclusion == 'automatic'
 
 
