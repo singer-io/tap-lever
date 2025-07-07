@@ -25,12 +25,9 @@ class LeverRunner:
         LOGGER.info("Starting discovery.")
 
         catalog = []
-
         for available_stream in self.available_streams:
             stream = available_stream(self.config, self.state, None, None)
-
             catalog += stream.generate_catalog()
-
         json.dump({'streams': catalog}, sys.stdout, indent=4)
 
     def get_streams_to_replicate(self):
@@ -62,7 +59,6 @@ class LeverRunner:
                         opportunity_child_catalogs[available_stream.TABLE] = stream_catalog
                     else:
                         to_add = available_stream(self.config, self.state, stream_catalog, self.client)
-
                         streams.append(to_add)
 
         return (streams, opportunity_child_catalogs)
