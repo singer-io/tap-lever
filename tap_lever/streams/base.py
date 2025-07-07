@@ -33,6 +33,8 @@ class BaseStream:
     TABLE = None
     API_METHOD = 'GET'
     REQUIRES = []
+    REPLICATION_METHOD = 'FULL_TABLE'
+    REPLICATION_KEYS = []
 
     def __init__(self, config, state, catalog, client):
         self.config = config
@@ -53,6 +55,12 @@ class BaseStream:
 
     def get_schema(self):
         return self.load_schema_by_name(self.TABLE)
+
+    def get_replication_method(self):
+        return self.REPLICATION_METHOD
+
+    def get_replication_keys(self):
+        return list(self.REPLICATION_KEYS)
 
     @classmethod
     def requirements_met(cls, catalog):
@@ -94,6 +102,8 @@ class BaseStream:
             'tap_stream_id': self.TABLE,
             'stream': self.TABLE,
             'key_properties': self.KEY_PROPERTIES,
+            'replication_method': self.get_replication_method(),
+            'replication_keys': self.get_replication_keys(),
             'schema': self.get_schema(),
             'metadata': singer.metadata.to_list(mdata)
         }]
