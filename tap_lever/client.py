@@ -58,9 +58,13 @@ class LeverClient:
             raise OffsetInvalidException(response.text)
 
         if 500 <= response.status_code < 600:
-            raise Server5xxError()
+            msg = (
+                f"Server error {response.status_code}"
+                f"{': ' + response.text if response.text else ''}"
+            )
+            raise Server5xxError(msg)
         elif response.status_code == 429:
-            raise Server429Error()
+            raise Server429Error('Rate limit exceeded')
         elif response.status_code != 200:
             raise RuntimeError(response.text)
 

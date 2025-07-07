@@ -1,6 +1,3 @@
-# import tap_tester.connections as connections
-# import tap_tester.menagerie   as menagerie
-# import tap_tester.runner      as runner
 import os
 import unittest
 from functools import reduce
@@ -57,8 +54,13 @@ class LeverDiscovery(unittest.TestCase):
     # Integration tests are currently commented out in `.circleci/config.yml` to avoid execution.
     # This is a known backlog task and will be addressed in the future.
     # In the meantime, this test is explicitly skipped to allow other test suites to run unaffected.
+    # The imports are in the test block to skip the Import errors for tap_tester.
     @unittest.skip("Integration test temporarily skipped. Refer to .circleci/config.yml – backlog task.")
     def test_run(self):
+        import tap_tester.connections as connections
+        import tap_tester.menagerie   as menagerie
+        import tap_tester.runner      as runner
+
         conn_id = connections.ensure_connection(self)
 
         #run in check mode

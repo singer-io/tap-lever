@@ -77,10 +77,11 @@ class TestLeverClient(unittest.TestCase):
         )
         mock_request.return_value = resp500
 
-        with self.assertRaises(Server5xxError):
+        with self.assertRaises(Server5xxError) as req_err:
             self.client.make_request("url", "GET")
 
         self.assertEqual(mock_request.call_count, self.client.MAX_TRIES)
+        self.assertIn("Server error", str(req_err.exception))
 
     @patch("requests.request")
     def test_server429_max_retries(self, mock_request):
@@ -92,6 +93,7 @@ class TestLeverClient(unittest.TestCase):
         )
         mock_request.return_value = resp429
 
-        with self.assertRaises(Server429Error):
+        with self.assertRaises(Server429Error)as req_err:
             self.client.make_request("url", "GET")
         self.assertEqual(mock_request.call_count, self.client.MAX_TRIES)
+        self.assertEqual("Rate limit exceeded", str(req_err.exception))
