@@ -27,8 +27,25 @@ class LeverRunner:
         catalog = []
         for available_stream in self.available_streams:
             stream = available_stream(self.config, self.state, None, None)
+
             for entry in stream.generate_catalog():
-                entry.pop("replication_keys", None)
+                metadata_list = entry.get("metadata", [])
+                replication_method = None
+                for metadata_entry in metadata_list:
+                    if metadata_entry.get("breadcrumb") == []:
+                        replication_method = metadata_entry.get("metadata", {}).get("replication-method")
+                        break
+                replication_keys = entry.get("replication_keys", [])
+
+                if replication_method == "FULL_TABLE":
+                    entry.pop("replication_keys", None)
+                elif replication_method == "INCREMENTAL":
+                    if not replication_keys:
+                        raise ValueError(
+                            f"Stream '{entry.get('stream')}' is marked as INCREMENTAL "
+                            f"but has no replication_keys defined."
+                        )
+
                 catalog.append(entry)
 
         json.dump({'streams': catalog}, sys.stdout, indent=4)
