@@ -29,12 +29,7 @@ class LeverRunner:
             stream = available_stream(self.config, self.state, None, None)
 
             for entry in stream.generate_catalog():
-                metadata_list = entry.get("metadata", [])
-                replication_method = None
-                for metadata_entry in metadata_list:
-                    if metadata_entry.get("breadcrumb") == []:
-                        replication_method = metadata_entry.get("metadata", {}).get("replication-method")
-                        break
+                replication_method = entry.get("replication_method")
                 replication_keys = entry.get("replication_keys", [])
 
                 if replication_method == "FULL_TABLE":
