@@ -27,7 +27,10 @@ class LeverRunner:
         catalog = []
         for available_stream in self.available_streams:
             stream = available_stream(self.config, self.state, None, None)
-            catalog += stream.generate_catalog()
+            for entry in stream.generate_catalog():
+                entry.pop("replication_keys", None)
+                catalog.append(entry)
+
         json.dump({'streams': catalog}, sys.stdout, indent=4)
 
     def get_streams_to_replicate(self):
