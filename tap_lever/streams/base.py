@@ -34,6 +34,7 @@ class BaseStream:
     API_METHOD = 'GET'
     REQUIRES = []
     REPLICATION_METHOD = 'FULL_TABLE'
+    PARENT = None
     REPLICATION_KEYS = []
 
     def __init__(self, config, state, catalog, client):
@@ -102,7 +103,8 @@ class BaseStream:
             'tap_stream_id': self.TABLE,
             'stream': self.TABLE,
             'key_properties': self.KEY_PROPERTIES,
-            'replication_method': self.get_replication_method(),
+            'forced_replication_method': self.get_replication_method(),
+            **({'parent-tap-stream-id': self.PARENT} if self.PARENT else {}),
             'replication_keys': self.get_replication_keys(),
             'schema': self.get_schema(),
             'metadata': singer.metadata.to_list(mdata)
