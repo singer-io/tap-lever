@@ -103,7 +103,7 @@ class BaseStream:
             'tap_stream_id': self.TABLE,
             'stream': self.TABLE,
             'key_properties': self.KEY_PROPERTIES,
-            'forced_replication_method': self.get_replication_method(),
+            'forced-replication-method': self.get_replication_method(),
             **({'parent-tap-stream-id': self.PARENT} if self.PARENT else {}),
             'replication_keys': self.get_replication_keys(),
             'schema': self.get_schema(),
