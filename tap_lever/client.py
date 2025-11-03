@@ -68,5 +68,5 @@ class LeverClient:
         elif response.status_code != 200:
             raise RuntimeError(response.text)
 
-        return response.json()
+        return response_json
 
