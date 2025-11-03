@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0
+  * Libraries upgrade and tap-framework replacement [#38](https://github.com/singer-io/tap-lever/pull/38)
+  * Backoff and retry implementation [#39](https://github.com/singer-io/tap-lever/pull/39)
+
 ## 1.0.0
   * Releasing GA
 
