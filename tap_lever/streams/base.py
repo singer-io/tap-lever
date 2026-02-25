@@ -1,5 +1,7 @@
 import inspect
+import inspect
 import math
+import os
 import os
 import pytz
 import singer
@@ -8,6 +10,7 @@ import singer.metrics
 
 from datetime import timedelta, datetime
 
+from singer import metadata as meta
 from singer import metadata as meta
 from tap_lever.streams import cache as stream_cache
 from tap_lever.config import get_config_start_date
@@ -18,6 +21,16 @@ from tap_lever.state import incorporate, save_state, \
 LOGGER = singer.get_logger()
 
 
+def is_stream_selected(stream):
+    stream_metadata = meta.to_map(stream.metadata)
+    selected = meta.get(stream_metadata, (), 'selected')
+    inclusion = meta.get(stream_metadata, (), 'inclusion')
+    if selected is not None:
+        return selected
+    return inclusion == 'automatic'
+
+
+class BaseStream:
 def is_stream_selected(stream):
     stream_metadata = meta.to_map(stream.metadata)
     selected = meta.get(stream_metadata, (), 'selected')
