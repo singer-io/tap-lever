@@ -16,7 +16,7 @@ setup(name='tap-lever',
       ],
       extras_require = {
         "dev": [
-          "nose",
+          "pytest",
         ],
       },
       entry_points='''
