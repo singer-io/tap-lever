@@ -22,7 +22,9 @@ jobs:
           name: 'Unit Tests'
           command: |
             source /usr/local/share/virtualenvs/tap-lever/bin/activate
-            nosetests tests
+            uv pip install pytest coverage
+            coverage run -m pytest tests
+            coverage html
       # TODO Get this test running
       #      (https://stitchdata.atlassian.net/browse/SRCE-4775)
       # - run:
