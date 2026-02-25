@@ -8,6 +8,7 @@ LOGGER = singer.get_logger()  # noqa
 class CandidateApplicationsStream(BaseStream):
     API_METHOD = "GET"
     TABLE = "candidate_applications"
+    PARENT = "candidates"
 
     @property
     def path(self):
@@ -38,6 +39,7 @@ class CandidateApplicationsStream(BaseStream):
 class OpportunityApplicationsStream(BaseStream):
     API_METHOD = "GET"
     TABLE = "opportunity_applications"
+    PARENT = "opportunities"
 
     @property
     def path(self):

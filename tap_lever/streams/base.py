@@ -1,5 +1,7 @@
 import inspect
+import inspect
 import math
+import os
 import os
 import pytz
 import singer
@@ -8,6 +10,7 @@ import singer.metrics
 
 from datetime import timedelta, datetime
 
+from singer import metadata as meta
 from singer import metadata as meta
 from tap_lever.streams import cache as stream_cache
 from tap_lever.config import get_config_start_date
@@ -28,12 +31,23 @@ def is_stream_selected(stream):
 
 
 class BaseStream:
+def is_stream_selected(stream):
+    stream_metadata = meta.to_map(stream.metadata)
+    selected = meta.get(stream_metadata, (), 'selected')
+    inclusion = meta.get(stream_metadata, (), 'inclusion')
+    if selected is not None:
+        return selected
+    return inclusion == 'automatic'
+
+
+class BaseStream:
     KEY_PROPERTIES = ['id']
     CACHE_RESULTS = False
     TABLE = None
     API_METHOD = 'GET'
     REQUIRES = []
     REPLICATION_METHOD = 'FULL_TABLE'
+    PARENT = None
     REPLICATION_KEYS = []
 
     def __init__(self, config, state, catalog, client):
@@ -102,7 +116,8 @@ class BaseStream:
             'tap_stream_id': self.TABLE,
             'stream': self.TABLE,
             'key_properties': self.KEY_PROPERTIES,
-            'replication_method': self.get_replication_method(),
+            'forced-replication-method': self.get_replication_method(),
+            **({'parent-tap-stream-id': self.PARENT} if self.PARENT else {}),
             'replication_keys': self.get_replication_keys(),
             'schema': self.get_schema(),
             'metadata': singer.metadata.to_list(mdata)
