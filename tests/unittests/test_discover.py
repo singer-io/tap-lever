@@ -1,0 +1,122 @@
+"""Unit tests for tap-lever discovery functionality."""
+import unittest
+from unittest.mock import MagicMock, patch
+
+from tap_lever.streams import AVAILABLE_STREAMS
+from tap_lever.streams.applications import CandidateApplicationsStream, OpportunityApplicationsStream
+from tap_lever.streams.candidates import CandidateStream
+from tap_lever.streams.opportunities import OpportunityStream
+from tap_lever.streams.offers import CandidateOffersStream, OpportunityOffersStream
+from tap_lever.streams.referrals import CandidateReferralsStream, OpportunityReferralsStream
+from tap_lever.streams.resumes import CandidateResumesStream, OpportunityResumesStream
+
+
+class TestLeverDiscovery(unittest.TestCase):
+
+    def test_available_streams_has_all_streams(self):
+        """Verify all expected streams are in AVAILABLE_STREAMS."""
+        expected_streams = {
+            "candidates",
+            "opportunities",
+            "archive_reasons",
+            "candidate_applications",
+            "candidate_offers",
+            "candidate_referrals",
+            "candidate_resumes",
+            "opportunity_applications",
+            "opportunity_offers",
+            "opportunity_referrals",
+            "opportunity_resumes",
+            "postings",
+            "requisitions",
+            "sources",
+            "stages",
+            "users"
+        }
+
+        stream_tables = {stream.TABLE for stream in AVAILABLE_STREAMS}
+        self.assertEqual(expected_streams, stream_tables)
+
+    def test_candidate_stream_has_correct_properties(self):
+        """Verify CandidateStream has expected configuration."""
+        config = {"token": "test_token", "start_date": "2020-01-01T00:00:00Z"}
+        state = {}
+        catalog = MagicMock()
+        client = MagicMock()
+
+        stream = CandidateStream(config, state, catalog, client)
+
+        self.assertEqual(stream.TABLE, "candidates")
+        self.assertEqual(stream.KEY_PROPERTIES, ["id"])
+        self.assertTrue(stream.CACHE_RESULTS)
+
+    def test_opportunity_stream_has_correct_properties(self):
+        config = {"token": "test_token", "start_date": "2020-01-01T00:00:00Z"}
+        state = {}
+        catalog = MagicMock()
+        client = MagicMock()
+
+        stream = OpportunityStream(config, state, catalog, client)
+
+        self.assertEqual(stream.TABLE, "opportunities")
+        self.assertEqual(stream.KEY_PROPERTIES, ["id"])
+
+    def test_child_streams_have_parent_set(self):
+        """Verify child streams have correct PARENT attribute."""
+
+        # Candidate child streams
+        self.assertEqual(CandidateApplicationsStream.PARENT, "candidates")
+        self.assertEqual(CandidateOffersStream.PARENT, "candidates")
+        self.assertEqual(CandidateReferralsStream.PARENT, "candidates")
+        self.assertEqual(CandidateResumesStream.PARENT, "candidates")
+
+        # Opportunity child streams
+        self.assertEqual(OpportunityApplicationsStream.PARENT, "opportunities")
+        self.assertEqual(OpportunityOffersStream.PARENT, "opportunities")
+        self.assertEqual(OpportunityReferralsStream.PARENT, "opportunities")
+        self.assertEqual(OpportunityResumesStream.PARENT, "opportunities")
+
+    @patch('tap_lever.streams.base.BaseStream.load_schema_by_name')
+    def test_generate_catalog_includes_forced_replication_method(self, mock_load_schema):
+        """Verify generate_catalog includes forced-replication-method."""
+
+        mock_load_schema.return_value = {
+            "type": "object",
+            "properties": {
+                "id": {"type": "string"},
+                "updated_at": {"type": "integer"}
+            }
+        }
+        config = {"token": "test_token", "start_date": "2020-01-01T00:00:00Z"}
+        state = {}
+        catalog = MagicMock()
+        client = MagicMock()
+
+        stream = CandidateStream(config, state, catalog, client)
+        catalog_entry = stream.generate_catalog()[0]
+
+        self.assertIn('forced-replication-method', catalog_entry)
+        self.assertEqual(catalog_entry['tap_stream_id'], 'candidates')
+        self.assertEqual(catalog_entry['key_properties'], ['id'])
+
+    @patch('tap_lever.streams.base.BaseStream.load_schema_by_name')
+    def test_generate_catalog_includes_parent_for_child_streams(self, mock_load_schema):
+        """Verify generate_catalog includes parent-tap-stream-id for child streams."""
+
+        mock_load_schema.return_value = {
+            "type": "object",
+            "properties": {
+                "id": {"type": "string"}
+            }
+        }
+
+        config = {"token": "test_token", "start_date": "2020-01-01T00:00:00Z"}
+        state = {}
+        catalog = MagicMock()
+        client = MagicMock()
+
+        stream = CandidateApplicationsStream(config, state, catalog, client)
+        catalog_entry = stream.generate_catalog()[0]
+
+        self.assertIn('parent-tap-stream-id', catalog_entry)
+        self.assertEqual(catalog_entry['parent-tap-stream-id'], 'candidates')
