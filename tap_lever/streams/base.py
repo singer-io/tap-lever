@@ -77,50 +77,24 @@ class BaseStream:
 
     def generate_catalog(self):
         schema = self.get_schema()
-        mdata = singer.metadata.new()
-
-        mdata = singer.metadata.write(
-            mdata,
-            (),
-            'inclusion',
-            'available'
-        )
-
-        mdata = singer.metadata.write(
-            mdata,
-            (),
-            'table-key-properties',
-            self.KEY_PROPERTIES
-        )
-
-        mdata = singer.metadata.write(
-            mdata,
-            (),
-            'forced-replication-method',
-            self.get_replication_method()
-        )
-
         replication_keys = self.get_replication_keys()
-        if replication_keys:
-            mdata = singer.metadata.write(
-                mdata,
-                (),
-                'valid-replication-keys',
-                replication_keys
-            )
 
-        for field_name, field_schema in schema.get('properties').items():
-            inclusion = 'available'
+        mdata = singer.metadata.get_standard_metadata(
+            schema=schema,
+            key_properties=self.KEY_PROPERTIES,
+            valid_replication_keys=replication_keys or [],
+            replication_method=self.get_replication_method(),
+        )
+        mdata = singer.metadata.to_map(mdata)
 
-            if field_name in self.KEY_PROPERTIES:
-                inclusion = 'automatic'
-
-            mdata = singer.metadata.write(
-                mdata,
-                ('properties', field_name),
-                'inclusion',
-                inclusion
-            )
+        for field_name in schema.get('properties', {}).keys():
+            if field_name not in self.KEY_PROPERTIES and field_name not in (replication_keys or []):
+                mdata = singer.metadata.write(
+                    mdata,
+                    ('properties', field_name),
+                    'inclusion',
+                    'available'
+                )
 
         return [{
             'tap_stream_id': self.TABLE,
@@ -128,7 +102,7 @@ class BaseStream:
             'key_properties': self.KEY_PROPERTIES,
             'forced-replication-method': self.get_replication_method(),
             **({'parent-tap-stream-id': self.PARENT} if self.PARENT else {}),
-            'replication_keys': self.get_replication_keys(),
+            'replication_keys': replication_keys,
             'schema': self.get_schema(),
             'metadata': singer.metadata.to_list(mdata)
         }]
