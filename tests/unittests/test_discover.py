@@ -99,6 +99,13 @@ class TestLeverDiscovery(unittest.TestCase):
         self.assertEqual(catalog_entry['tap_stream_id'], 'candidates')
         self.assertEqual(catalog_entry['key_properties'], ['id'])
 
+        # Verify the empty breadcrumb metadata contains table-level singer metadata
+        metadata_map = {tuple(entry['breadcrumb']): entry['metadata'] for entry in catalog_entry['metadata']}
+        root_meta = metadata_map.get(())
+        self.assertIsNotNone(root_meta, "Empty breadcrumb metadata entry is missing")
+        self.assertEqual(root_meta.get('table-key-properties'), ['id'])
+        self.assertEqual(root_meta.get('forced-replication-method'), 'FULL_TABLE')
+
     @patch('tap_lever.streams.base.BaseStream.load_schema_by_name')
     def test_generate_catalog_includes_parent_for_child_streams(self, mock_load_schema):
         """Verify generate_catalog includes parent-tap-stream-id for child streams."""

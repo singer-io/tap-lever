@@ -86,6 +86,29 @@ class BaseStream:
             'available'
         )
 
+        mdata = singer.metadata.write(
+            mdata,
+            (),
+            'table-key-properties',
+            self.KEY_PROPERTIES
+        )
+
+        mdata = singer.metadata.write(
+            mdata,
+            (),
+            'forced-replication-method',
+            self.get_replication_method()
+        )
+
+        replication_keys = self.get_replication_keys()
+        if replication_keys:
+            mdata = singer.metadata.write(
+                mdata,
+                (),
+                'valid-replication-keys',
+                replication_keys
+            )
+
         for field_name, field_schema in schema.get('properties').items():
             inclusion = 'available'
 
