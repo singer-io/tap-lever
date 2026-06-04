@@ -87,15 +87,6 @@ class BaseStream:
         )
         mdata = singer.metadata.to_map(mdata)
 
-        for field_name in schema.get('properties', {}).keys():
-            if field_name not in self.KEY_PROPERTIES and field_name not in (replication_keys or []):
-                mdata = singer.metadata.write(
-                    mdata,
-                    ('properties', field_name),
-                    'inclusion',
-                    'available'
-                )
-
         return [{
             'tap_stream_id': self.TABLE,
             'stream': self.TABLE,
