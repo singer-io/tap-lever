@@ -94,7 +94,7 @@ class BaseStream:
             'forced-replication-method': self.get_replication_method(),
             **({'parent-tap-stream-id': self.PARENT} if self.PARENT else {}),
             'replication_keys': replication_keys,
-            'schema': self.get_schema(),
+            'schema': schema,
             'metadata': singer.metadata.to_list(mdata)
         }]
 
