@@ -49,3 +49,26 @@ class LeverDiscoveryTest(LeverBaseTest, unittest.TestCase):
                     actual_replication_keys,
                     expected_stream[self.REPLICATION_KEYS],
                 )
+
+                # Verify empty breadcrumb metadata contains required Singer spec keys
+                metadata_map = {
+                    tuple(e['breadcrumb']): e['metadata']
+                    for e in entry['metadata']
+                }
+                root_meta = metadata_map.get(())
+                self.assertIsNotNone(root_meta, f"{stream_name}: empty breadcrumb entry missing")
+                self.assertEqual(
+                    set(root_meta.get('table-key-properties', [])),
+                    expected_stream[self.PRIMARY_KEYS],
+                    f"{stream_name}: table-key-properties mismatch in metadata",
+                )
+                self.assertEqual(
+                    root_meta.get('forced-replication-method'),
+                    expected_stream[self.REPLICATION_METHOD],
+                    f"{stream_name}: forced-replication-method mismatch in metadata",
+                )
+                self.assertEqual(
+                    set(root_meta.get('valid-replication-keys', [])),
+                    expected_stream[self.REPLICATION_KEYS],
+                    f"{stream_name}: valid-replication-keys mismatch in metadata",
+                )

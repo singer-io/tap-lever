@@ -105,6 +105,48 @@ class TestLeverDiscovery(unittest.TestCase):
         self.assertIsNotNone(root_meta, "Empty breadcrumb metadata entry is missing")
         self.assertEqual(root_meta.get('table-key-properties'), ['id'])
         self.assertEqual(root_meta.get('forced-replication-method'), 'FULL_TABLE')
+        self.assertIn('valid-replication-keys', root_meta)
+        self.assertEqual(root_meta.get('valid-replication-keys'), [])
+        self.assertEqual(root_meta.get('inclusion'), 'available')
+
+    @patch('tap_lever.streams.base.BaseStream.load_schema_by_name')
+    def test_generate_catalog_empty_breadcrumb_all_required_keys(self, mock_load_schema):
+        """Verify all Singer spec keys are present at empty breadcrumb for every stream class."""
+        mock_load_schema.return_value = {
+            "type": "object",
+            "properties": {
+                "id": {"type": "string"}
+            }
+        }
+        config = {"token": "test_token", "start_date": "2020-01-01T00:00:00Z"}
+        state = {}
+        catalog = MagicMock()
+        client = MagicMock()
+
+        required_root_keys = {'table-key-properties', 'forced-replication-method', 'valid-replication-keys', 'inclusion'}
+
+        for stream_class in AVAILABLE_STREAMS:
+            with self.subTest(stream=stream_class.TABLE):
+                stream = stream_class(config, state, catalog, client)
+                catalog_entry = stream.generate_catalog()[0]
+
+                metadata_map = {
+                    tuple(e['breadcrumb']): e['metadata']
+                    for e in catalog_entry['metadata']
+                }
+                root_meta = metadata_map.get(())
+
+                self.assertIsNotNone(root_meta, f"{stream_class.TABLE}: empty breadcrumb entry missing")
+                for key in required_root_keys:
+                    self.assertIn(key, root_meta, f"{stream_class.TABLE}: '{key}' missing from empty breadcrumb metadata")
+                self.assertEqual(
+                    root_meta['table-key-properties'], stream_class.KEY_PROPERTIES,
+                    f"{stream_class.TABLE}: table-key-properties mismatch"
+                )
+                self.assertEqual(
+                    root_meta['forced-replication-method'], stream_class.REPLICATION_METHOD,
+                    f"{stream_class.TABLE}: forced-replication-method mismatch"
+                )
 
     @patch('tap_lever.streams.base.BaseStream.load_schema_by_name')
     def test_generate_catalog_includes_parent_for_child_streams(self, mock_load_schema):
