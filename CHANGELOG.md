@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.0
+  * Fix catalog discovery: write `table-key-properties`, `forced-replication-method`, and `valid-replication-keys` to empty breadcrumb metadata using `get_standard_metadata()`; write `parent-tap-stream-id` to empty breadcrumb metadata for child streams [#45](https://github.com/singer-io/tap-lever/pull/45)
+  * Upgrade `singer-python==6.8.0`, `requests==2.34.2` [#45](https://github.com/singer-io/tap-lever/pull/45)
+
 ## 1.1.0
   * Libraries upgrade and tap-framework replacement [#38](https://github.com/singer-io/tap-lever/pull/38)
   * Backoff and retry implementation [#39](https://github.com/singer-io/tap-lever/pull/39)

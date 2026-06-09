@@ -77,36 +77,26 @@ class BaseStream:
 
     def generate_catalog(self):
         schema = self.get_schema()
-        mdata = singer.metadata.new()
+        replication_keys = self.get_replication_keys()
 
-        mdata = singer.metadata.write(
-            mdata,
-            (),
-            'inclusion',
-            'available'
+        mdata = singer.metadata.get_standard_metadata(
+            schema=schema,
+            key_properties=self.KEY_PROPERTIES,
+            valid_replication_keys=replication_keys or [],
+            replication_method=self.get_replication_method(),
         )
+        mdata = singer.metadata.to_map(mdata)
 
-        for field_name, field_schema in schema.get('properties').items():
-            inclusion = 'available'
-
-            if field_name in self.KEY_PROPERTIES:
-                inclusion = 'automatic'
-
-            mdata = singer.metadata.write(
-                mdata,
-                ('properties', field_name),
-                'inclusion',
-                inclusion
-            )
+        if self.PARENT:
+            singer.metadata.write(mdata, (), 'parent-tap-stream-id', self.PARENT)
 
         return [{
             'tap_stream_id': self.TABLE,
             'stream': self.TABLE,
             'key_properties': self.KEY_PROPERTIES,
             'forced-replication-method': self.get_replication_method(),
-            **({'parent-tap-stream-id': self.PARENT} if self.PARENT else {}),
-            'replication_keys': self.get_replication_keys(),
-            'schema': self.get_schema(),
+            'replication_keys': replication_keys,
+            'schema': schema,
             'metadata': singer.metadata.to_list(mdata)
         }]
 
