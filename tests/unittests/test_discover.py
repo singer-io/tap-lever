@@ -167,5 +167,10 @@ class TestLeverDiscovery(unittest.TestCase):
         stream = CandidateApplicationsStream(config, state, catalog, client)
         catalog_entry = stream.generate_catalog()[0]
 
-        self.assertIn('parent-tap-stream-id', catalog_entry)
-        self.assertEqual(catalog_entry['parent-tap-stream-id'], 'candidates')
+        self.assertNotIn('parent-tap-stream-id', catalog_entry)
+
+        metadata_map = {tuple(e['breadcrumb']): e['metadata'] for e in catalog_entry['metadata']}
+        root_meta = metadata_map.get(())
+        self.assertIsNotNone(root_meta)
+        self.assertIn('parent-tap-stream-id', root_meta)
+        self.assertEqual(root_meta['parent-tap-stream-id'], 'candidates')
