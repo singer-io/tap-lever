@@ -11,7 +11,6 @@ from tap_lever.streams.offers import CandidateOffersStream, OpportunityOffersStr
 from tap_lever.streams.referrals import CandidateReferralsStream, OpportunityReferralsStream
 from tap_lever.streams.resumes import CandidateResumesStream, OpportunityResumesStream
 from tap_lever.streams.users import UsersStream
-from tap_lever.streams.postings import PostingsStream
 from tap_lever.__init__ import LeverRunner
 
 
