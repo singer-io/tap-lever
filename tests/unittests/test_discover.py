@@ -2,6 +2,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
+from tap_lever.client import LeverForbiddenError
 from tap_lever.streams import AVAILABLE_STREAMS
 from tap_lever.streams.applications import CandidateApplicationsStream, OpportunityApplicationsStream
 from tap_lever.streams.candidates import CandidateStream
@@ -9,6 +10,9 @@ from tap_lever.streams.opportunities import OpportunityStream
 from tap_lever.streams.offers import CandidateOffersStream, OpportunityOffersStream
 from tap_lever.streams.referrals import CandidateReferralsStream, OpportunityReferralsStream
 from tap_lever.streams.resumes import CandidateResumesStream, OpportunityResumesStream
+from tap_lever.streams.users import UsersStream
+from tap_lever.streams.postings import PostingsStream
+from tap_lever.__init__ import LeverRunner
 
 
 class TestLeverDiscovery(unittest.TestCase):
@@ -174,3 +178,63 @@ class TestLeverDiscovery(unittest.TestCase):
         self.assertIsNotNone(root_meta)
         self.assertIn('parent-tap-stream-id', root_meta)
         self.assertEqual(root_meta['parent-tap-stream-id'], 'candidates')
+
+
+class TestCheckAccess(unittest.TestCase):
+    """Tests for BaseStream.check_access() and do_discover() exclusion logic."""
+
+    def _make_stream(self, stream_cls, client):
+        config = {"token": "test", "start_date": "2020-01-01T00:00:00Z"}
+        return stream_cls(config, {}, None, client)
+
+    def _make_runner(self, client):
+        args = MagicMock()
+        args.config = {"token": "test", "start_date": "2020-01-01T00:00:00Z"}
+        args.state = {}
+        args.catalog = None
+        return LeverRunner(args, client, AVAILABLE_STREAMS)
+
+    def test_check_access_returns_true_on_success(self):
+        client = MagicMock()
+        client.make_request.return_value = {"data": [], "next": None}
+        self.assertTrue(self._make_stream(UsersStream, client).check_access())
+
+    def test_check_access_returns_false_on_403(self):
+        client = MagicMock()
+        client.make_request.side_effect = LeverForbiddenError("Forbidden")
+        self.assertFalse(self._make_stream(UsersStream, client).check_access())
+
+    def test_check_access_child_stream_always_true(self):
+        client = MagicMock()
+        config = {"token": "test", "start_date": "2020-01-01T00:00:00Z"}
+        for stream_cls in AVAILABLE_STREAMS:
+            if stream_cls.PARENT is not None:
+                stream = stream_cls(config, {}, None, client)
+                self.assertTrue(stream.check_access(), msg=f"{stream_cls.TABLE} should always be True")
+        client.make_request.assert_not_called()
+
+    def test_discover_excludes_inaccessible_parent_and_its_children(self):
+        client = MagicMock()
+
+        def side_effect(url, method, params=None, body=None):
+            if "/candidates" in url and "/opportunities" not in url:
+                raise LeverForbiddenError("Forbidden")
+            return {"data": [], "next": None}
+
+        client.make_request.side_effect = side_effect
+        runner = self._make_runner(client)
+
+        with patch("json.dump") as mock_dump:
+            runner.do_discover()
+            stream_ids = {e["tap_stream_id"] for e in mock_dump.call_args[0][0]["streams"]}
+
+        for excluded in ("candidates", "candidate_applications", "candidate_offers",
+                         "candidate_referrals", "candidate_resumes"):
+            self.assertNotIn(excluded, stream_ids)
+
+    def test_discover_raises_when_all_parent_streams_inaccessible(self):
+        client = MagicMock()
+        client.make_request.side_effect = LeverForbiddenError("Forbidden")
+        with self.assertRaises(LeverForbiddenError):
+            self._make_runner(client).do_discover()
+

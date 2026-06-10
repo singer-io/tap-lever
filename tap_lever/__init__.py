@@ -4,7 +4,7 @@ import json
 import singer
 import sys
 
-from tap_lever.client import LeverClient
+from tap_lever.client import LeverClient, LeverForbiddenError
 from tap_lever.streams import AVAILABLE_STREAMS
 from tap_lever.state import save_state
 from tap_lever.streams.base import is_stream_selected
@@ -24,9 +24,44 @@ class LeverRunner:
     def do_discover(self):
         LOGGER.info("Starting discovery.")
 
+        parent_streams = [s for s in self.available_streams if s.PARENT is None]
+
+        inaccessible_parents = set()
+        for stream_cls in parent_streams:
+            stream = stream_cls(self.config, {}, None, self.client)
+            if not stream.check_access():
+                inaccessible_parents.add(stream_cls.TABLE)
+
+        if len(inaccessible_parents) == len(parent_streams):
+            raise LeverForbiddenError(
+                "HTTP-error-code: 403, Error: The account credentials supplied do not have "
+                "'read' access to any of the streams supported by the tap. Data collection "
+                "cannot be initiated due to lack of permissions."
+            )
+
+        if inaccessible_parents:
+            LOGGER.warning(
+                "The account credentials supplied do not have 'read' access to the following "
+                "stream(s): %s. These streams have been excluded from the catalog.",
+                ", ".join(sorted(inaccessible_parents)),
+            )
+
+        inaccessible = set(inaccessible_parents)
+        for stream_cls in self.available_streams:
+            if stream_cls.PARENT and stream_cls.PARENT in inaccessible:
+                LOGGER.warning(
+                    "Stream '%s' excluded from catalog because its parent stream '%s' is not accessible.",
+                    stream_cls.TABLE,
+                    stream_cls.PARENT,
+                )
+                inaccessible.add(stream_cls.TABLE)
+
         catalog = []
         for available_stream in self.available_streams:
-            stream = available_stream(self.config, self.state, None, None)
+            if available_stream.TABLE in inaccessible:
+                continue
+
+            stream = available_stream(self.config, {}, None, self.client)
 
             for entry in stream.generate_catalog():
                 replication_method = entry.get("replication_method")

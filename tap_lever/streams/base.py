@@ -115,6 +115,26 @@ class BaseStream:
 
         return self.sync_data()
 
+    def check_access(self) -> bool:
+        """
+        Probe this stream for read access.
+        Returns True if accessible, False if a 403 Forbidden error is raised.
+        Child streams always return True since access is governed by the parent.
+        """
+        from tap_lever.client import LeverForbiddenError
+        if self.PARENT:
+            return True
+        url = self.get_url()
+        try:
+            self.client.make_request(url, self.API_METHOD, params={"limit": 1})
+            return True
+        except LeverForbiddenError:
+            LOGGER.warning(
+                "Stream '%s' does not have read permission, excluding from catalog.",
+                self.TABLE,
+            )
+            return False
+
     def get_url(self):
         return 'https://api.lever.co/v1{}'.format(self.path)
 

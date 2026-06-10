@@ -20,6 +20,10 @@ class OffsetInvalidException(Exception):
     pass
 
 
+class LeverForbiddenError(Exception):
+    pass
+
+
 class LeverClient:
 
     MAX_TRIES = 5
@@ -65,6 +69,8 @@ class LeverClient:
             raise Server5xxError(msg)
         elif response.status_code == 429:
             raise Server429Error('Rate limit exceeded')
+        elif response.status_code == 403:
+            raise LeverForbiddenError(response.text)
         elif response.status_code != 200:
             raise RuntimeError(response.text)
 
