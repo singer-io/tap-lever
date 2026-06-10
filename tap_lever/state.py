@@ -1,3 +1,5 @@
+"""State management helpers for Singer bookmarks."""
+
 import json
 import singer
 
@@ -7,6 +9,7 @@ LOGGER = singer.get_logger()
 
 
 def get_last_record_value_for_table(state, table):
+    """Return the last bookmarked datetime for *table*, or None if not yet set."""
     last_value = state.get('bookmarks', {}) \
                       .get(table, {}) \
                       .get('last_record')
@@ -18,6 +21,7 @@ def get_last_record_value_for_table(state, table):
 
 
 def incorporate(state, table, field, value):
+    """Advance the bookmark for *table*/*field* to *value* if it is more recent."""
     if value is None:
         return state
 
@@ -39,6 +43,7 @@ def incorporate(state, table, field, value):
 
 
 def save_state(state):
+    """Write current state to stdout via singer.write_state."""
     if not state:
         return
 
@@ -48,12 +53,13 @@ def save_state(state):
 
 
 def load_state(filename):
+    """Load state from *filename* and return as a dict; returns {} when filename is None."""
     if filename is None:
         return {}
 
     try:
-        with open(filename) as handle:
+        with open(filename, encoding='utf-8') as handle:
             return json.load(handle)
-    except:
+    except Exception as exc:
         LOGGER.fatal("Failed to decode state file. Is it valid json?")
-        raise RuntimeError
+        raise RuntimeError("Failed to decode state file") from exc

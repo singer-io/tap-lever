@@ -1,3 +1,5 @@
+"""Stream registry for the Lever tap."""
+
 from tap_lever.streams.applications import (
     CandidateApplicationsStream,
     OpportunityApplicationsStream,

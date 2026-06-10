@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
+"""Singer tap entry point and sync orchestration for the Lever API."""
 
 import json
-import singer
 import sys
+
+import singer
 
 from tap_lever.client import LeverClient, LeverForbiddenError
 from tap_lever.streams import AVAILABLE_STREAMS
@@ -13,8 +15,10 @@ LOGGER = singer.get_logger()  # noqa
 
 
 class LeverRunner:
+    """Orchestrates discovery and sync for the Lever tap."""
 
     def __init__(self, args, client, available_streams):
+        """Initialise the runner with parsed CLI args, an authenticated client and streams."""
         self.config = args.config
         self.state = args.state
         self.catalog = args.catalog
@@ -22,6 +26,7 @@ class LeverRunner:
         self.available_streams = available_streams
 
     def do_discover(self):
+        """Probe each stream for read access and emit an accessible catalog to stdout."""
         LOGGER.info("Starting discovery.")
 
         parent_streams = [s for s in self.available_streams if s.PARENT is None]
@@ -41,8 +46,8 @@ class LeverRunner:
 
         if inaccessible_parents:
             LOGGER.warning(
-                "The account credentials supplied do not have 'read' access to the following "
-                "stream(s): %s. These streams have been excluded from the catalog.",
+                "The account credentials supplied do not have 'read' access to the "
+                "following stream(s): %s. These streams have been excluded from the catalog.",
                 ", ".join(sorted(inaccessible_parents)),
             )
 
@@ -50,7 +55,8 @@ class LeverRunner:
         for stream_cls in self.available_streams:
             if stream_cls.PARENT and stream_cls.PARENT in inaccessible:
                 LOGGER.warning(
-                    "Stream '%s' excluded from catalog because its parent stream '%s' is not accessible.",
+                    "Stream '%s' excluded from catalog because its parent stream "
+                    "'%s' is not accessible.",
                     stream_cls.TABLE,
                     stream_cls.PARENT,
                 )
@@ -81,6 +87,7 @@ class LeverRunner:
         json.dump({'streams': catalog}, sys.stdout, indent=4)
 
     def get_streams_to_replicate(self):
+        """Return the list of selected streams and opportunity child catalogs to sync."""
         streams = []
         opportunity_child_catalogs = {}
 
@@ -88,32 +95,38 @@ class LeverRunner:
             return streams, opportunity_child_catalogs
         for stream_catalog in self.catalog.streams:
             if not is_stream_selected(stream_catalog):
-                LOGGER.info("'{}' is not marked selected, skipping."
-                            .format(stream_catalog.stream))
+                LOGGER.info("'%s' is not marked selected, skipping.", stream_catalog.stream)
                 continue
 
             for available_stream in self.available_streams:
                 if available_stream.matches_catalog(stream_catalog):
                     if not available_stream.requirements_met(self.catalog):
                         raise RuntimeError(
-                            "{} requires that that the following are "
-                            "selected: {}"
-                            .format(stream_catalog.stream,
-                                    ','.join(available_stream.REQUIRES)))
+                            f"{stream_catalog.stream} requires that that the following "
+                            f"are selected: {','.join(available_stream.REQUIRES)}"
+                        )
 
-                    if available_stream.TABLE in {'opportunity_applications',
-                                                  'opportunity_offers',
-                                                  'opportunity_referrals',
-                                                  'opportunity_resumes'}:
-                        LOGGER.info('Will sync %s during the Opportunity stream sync', available_stream.TABLE)
+                    if available_stream.TABLE in {
+                        'opportunity_applications',
+                        'opportunity_offers',
+                        'opportunity_referrals',
+                        'opportunity_resumes',
+                    }:
+                        LOGGER.info(
+                            'Will sync %s during the Opportunity stream sync',
+                            available_stream.TABLE,
+                        )
                         opportunity_child_catalogs[available_stream.TABLE] = stream_catalog
                     else:
-                        to_add = available_stream(self.config, self.state, stream_catalog, self.client)
+                        to_add = available_stream(
+                            self.config, self.state, stream_catalog, self.client,
+                        )
                         streams.append(to_add)
 
         return (streams, opportunity_child_catalogs)
 
     def do_sync(self):
+        """Execute an incremental or full-table sync for all selected streams."""
         LOGGER.info("Starting sync.")
 
         streams, opportunity_child_catalogs = self.get_streams_to_replicate()
@@ -134,6 +147,7 @@ class LeverRunner:
 
 @singer.utils.handle_top_exception(LOGGER)
 def main():
+    """Parse CLI args, create an authenticated client and run discovery or sync."""
     args = singer.utils.parse_args(required_config_keys=['token'])
     client = LeverClient(args.config)
     runner = LeverRunner(

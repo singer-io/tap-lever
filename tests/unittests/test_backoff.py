@@ -39,6 +39,7 @@ class TestLeverClient(unittest.TestCase):
             auth=(self.config["token"], ""),
             params={"a": 1},
             json={"b": 2},
+            timeout=300,
         )
 
     @patch("requests.request")

@@ -1,14 +1,16 @@
+"""Base stream classes shared by all Lever tap streams."""
+
 import inspect
-import math
 import os
+from datetime import timedelta, datetime
+
 import pytz
 import singer
 import singer.utils
 import singer.metrics
 
-from datetime import timedelta, datetime
-
 from singer import metadata as meta
+from tap_lever.client import LeverForbiddenError
 from tap_lever.streams import cache as stream_cache
 from tap_lever.config import get_config_start_date
 from tap_lever.state import incorporate, save_state, \
@@ -19,6 +21,7 @@ LOGGER = singer.get_logger()
 
 
 def is_stream_selected(stream):
+    """Return True if *stream* is marked as selected in the catalog metadata."""
     stream_metadata = meta.to_map(stream.metadata)
     selected = meta.get(stream_metadata, (), 'selected')
     inclusion = meta.get(stream_metadata, (), 'inclusion')
@@ -28,6 +31,8 @@ def is_stream_selected(stream):
 
 
 class BaseStream:
+    """Base class providing catalog generation, schema writing, and pagination for all streams."""
+
     KEY_PROPERTIES = ['id']
     CACHE_RESULTS = False
     TABLE = None
@@ -36,8 +41,10 @@ class BaseStream:
     REPLICATION_METHOD = 'FULL_TABLE'
     PARENT = None
     REPLICATION_KEYS = []
+    path = ''
 
     def __init__(self, config, state, catalog, client):
+        """Initialise the stream with config, state, catalog entry and HTTP client."""
         self.config = config
         self.state = state
         self.catalog = catalog
@@ -45,26 +52,32 @@ class BaseStream:
         self.substreams = []
 
     def get_class_path(self):
+        """Return the directory that contains this class's source file."""
         return os.path.dirname(inspect.getfile(self.__class__))
 
     def load_schema_by_name(self, name):
+        """Load and return the JSON schema for the stream named *name*."""
         return singer.utils.load_json(
             os.path.normpath(
                 os.path.join(
                     self.get_class_path(),
-                    '../schemas/{}.json'.format(name))))
+                    f'../schemas/{name}.json')))
 
     def get_schema(self):
+        """Return the JSON schema for this stream."""
         return self.load_schema_by_name(self.TABLE)
 
     def get_replication_method(self):
+        """Return the replication method string (FULL_TABLE or INCREMENTAL)."""
         return self.REPLICATION_METHOD
 
     def get_replication_keys(self):
+        """Return the list of replication key field names."""
         return list(self.REPLICATION_KEYS)
 
     @classmethod
     def requirements_met(cls, catalog):
+        """Return True if all streams required by this stream are selected in *catalog*."""
         selected_streams = [
             s.stream for s in catalog.streams if is_stream_selected(s)
         ]
@@ -73,9 +86,11 @@ class BaseStream:
 
     @classmethod
     def matches_catalog(cls, stream_catalog):
+        """Return True if *stream_catalog* corresponds to this stream class."""
         return stream_catalog.stream == cls.TABLE
 
     def generate_catalog(self):
+        """Return a list of catalog entry dicts for this stream."""
         schema = self.get_schema()
         replication_keys = self.get_replication_keys()
 
@@ -101,27 +116,30 @@ class BaseStream:
         }]
 
     def write_schema(self):
+        """Emit a Singer SCHEMA message for this stream."""
         singer.write_schema(
             self.catalog.stream,
             self.catalog.schema.to_dict(),
             key_properties=self.catalog.key_properties)
 
     def sync(self):
-        LOGGER.info('Syncing stream {} with {}'
-                    .format(self.catalog.tap_stream_id,
-                            self.__class__.__name__))
+        """Write the schema then sync all data for this stream."""
+        LOGGER.info(
+            'Syncing stream %s with %s',
+            self.catalog.tap_stream_id,
+            self.__class__.__name__,
+        )
 
         self.write_schema()
 
         return self.sync_data()
 
     def check_access(self) -> bool:
-        """
-        Probe this stream for read access.
+        """Probe this stream for read access.
+
         Returns True if accessible, False if a 403 Forbidden error is raised.
         Child streams always return True since access is governed by the parent.
         """
-        from tap_lever.client import LeverForbiddenError
         if self.PARENT:
             return True
         url = self.get_url()
@@ -136,19 +154,21 @@ class BaseStream:
             return False
 
     def get_url(self):
-        return 'https://api.lever.co/v1{}'.format(self.path)
+        """Return the full API URL for this stream."""
+        return f'https://api.lever.co/v1{self.path}'
 
     def get_params(self, _next):
+        """Return request parameters, optionally including a pagination offset."""
         params = {"limit": 100}
         if _next:
-             params["offset"] = _next
-
+            params["offset"] = _next
         return params
 
     def sync_data(self):
+        """Fetch and write all records for this stream; return the updated state."""
         table = self.TABLE
 
-        LOGGER.info('Syncing data for {}'.format(table))
+        LOGGER.info('Syncing data for %s', table)
 
         url = self.get_url()
         params = self.get_params(_next=None)
@@ -156,13 +176,14 @@ class BaseStream:
 
         if self.CACHE_RESULTS:
             stream_cache.add(table, resources)
-            LOGGER.info('Added {} {}s to cache'.format(len(resources), table))
+            LOGGER.info('Added %s %ss to cache', len(resources), table)
 
         LOGGER.info('Reached end of stream, moving on.')
         save_state(self.state)
         return self.state
 
     def sync_paginated(self, url, params=None):
+        """Paginate through the API and write all records; return the full list."""
         table = self.TABLE
         _next = True
         page = 1
@@ -184,12 +205,13 @@ class BaseStream:
             if _next:
                 params['offset'] = _next
 
-            LOGGER.info('Synced page {} for {}'.format(page, self.TABLE))
+            LOGGER.info('Synced page %s for %s', page, self.TABLE)
             page += 1
         transformer.log_warning()
         return all_resources
 
     def get_stream_data(self, result, transformer):
+        """Transform and return records using the catalog schema and metadata."""
         metadata = {}
 
         if self.catalog.metadata is not None:
@@ -200,10 +222,14 @@ class BaseStream:
             for record in result
         ]
 
+
 class TimeRangeStream(BaseStream):
+    """A stream that syncs data in rolling time windows bounded by a range field."""
+
     RANGE_FIELD = 'updated_at'
 
     def get_params(self, start, end):
+        """Return params filtered to the time window between *start* and *end*."""
         return {
             self.RANGE_FIELD + '_start': int(start.timestamp() * 1000),
             self.RANGE_FIELD + '_end': int(end.timestamp() * 1000),
@@ -211,6 +237,7 @@ class TimeRangeStream(BaseStream):
         }
 
     def sync_data(self):
+        """Sync data in weekly increments from the last bookmark up to now."""
         table = self.TABLE
 
         date = get_last_record_value_for_table(self.state, table)
@@ -228,20 +255,22 @@ class TimeRangeStream(BaseStream):
 
         if self.CACHE_RESULTS:
             stream_cache.add(table, all_resources)
-            LOGGER.info('Added {} {}s to cache'.format(len(all_resources), table))
+            LOGGER.info('Added %s %ss to cache', len(all_resources), table)
 
         return self.state
 
     def sync_data_for_period(self, date, interval):
+        """Sync one time-window of data starting at *date* and advance the bookmark."""
         table = self.TABLE
 
         updated_after = date
         updated_before = updated_after + interval
 
         LOGGER.info(
-            'Syncing data from {} to {}'.format(
-                updated_after.isoformat(),
-                updated_before.isoformat()))
+            'Syncing data from %s to %s',
+            updated_after.isoformat(),
+            updated_before.isoformat(),
+        )
 
         params = self.get_params(updated_after, updated_before)
         url = self.get_url()

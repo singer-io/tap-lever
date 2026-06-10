@@ -25,6 +25,11 @@ jobs:
             uv pip install pytest coverage
             coverage run -m pytest tests
             coverage html
+      - run:
+          name: 'Pylint'
+          command: |
+            source /usr/local/share/virtualenvs/tap-lever/bin/activate
+            uv pip install pylint
       # TODO Get this test running
       #      (https://stitchdata.atlassian.net/browse/SRCE-4775)
       # - run:
