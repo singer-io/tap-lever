@@ -3,7 +3,7 @@
 ## 1.2.0
   * Fix catalog discovery: write `table-key-properties`, `forced-replication-method`, and `valid-replication-keys` to empty breadcrumb metadata using `get_standard_metadata()`; write `parent-tap-stream-id` to empty breadcrumb metadata for child streams [#45](https://github.com/singer-io/tap-lever/pull/45)
   * Upgrade `singer-python==6.8.0`, `requests==2.34.2` [#45](https://github.com/singer-io/tap-lever/pull/45)
-  * Streams, the credentials cannot access (403) are now excluded from the catalog during discovery [#46](https://github.com/singer-io/tap-lever/pull/46)
+  * Streams that the credentials cannot access (403) are now excluded from the catalog during discovery [#46](https://github.com/singer-io/tap-lever/pull/46)
 
 ## 1.1.0
   * Libraries upgrade and tap-framework replacement [#38](https://github.com/singer-io/tap-lever/pull/38)
