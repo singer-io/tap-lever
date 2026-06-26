@@ -36,6 +36,7 @@ class BaseStream:
     REPLICATION_METHOD = 'FULL_TABLE'
     PARENT = None
     REPLICATION_KEYS = []
+    path = None
 
     def __init__(self, config, state, catalog, client):
         self.config = config

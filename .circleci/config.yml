@@ -22,9 +22,14 @@ jobs:
           name: 'Unit Tests'
           command: |
             source /usr/local/share/virtualenvs/tap-lever/bin/activate
-            uv pip install pytest coverage
+            uv pip install pytest coverage pylint
             coverage run -m pytest tests
             coverage html
+      - run:
+          name: 'Pylint'
+          command: |
+            source /usr/local/share/virtualenvs/tap-lever/bin/activate
+            pylint tap_lever/ -d C,R,W
       # TODO Get this test running
       #      (https://stitchdata.atlassian.net/browse/SRCE-4775)
       # - run:
