@@ -39,9 +39,10 @@ class LeverClient:
         """
         Verify that the configured API token is valid.
         Raises LeverUnauthorizedError if the token is rejected by the API.
-        All other errors (permission 403, server errors, network issues) are
-        swallowed — this method is a credentials-only check; stream-level
-        access is determined separately during discovery.
+        A permission-level 403 (LeverForbiddenError) is treated as valid credentials
+        (the token is authentic; stream access is checked during discovery).
+        Any other error (5xx, network) cannot confirm credentials — a warning is
+        logged and execution continues without claiming success.
         """
         LOGGER.info("Verifying Lever API credentials.")
         try:
@@ -52,10 +53,18 @@ class LeverClient:
             )
         except LeverUnauthorizedError:
             raise
-        except Exception:
-            # Any non-auth error (permission 403, 5xx, network) is irrelevant
-            # to credential validity — ignore and let discovery handle it.
+        except LeverForbiddenError:
+            # Token is valid but lacks access to /users specifically.
+            # Treat as authenticated; stream-level access is handled during discovery.
             pass
+        except Exception:
+            # Network/server errors don't indicate invalid credentials.
+            # Log a warning and continue without claiming verification succeeded.
+            LOGGER.warning(
+                "Could not verify Lever API credentials due to a transient error; "
+                "proceeding — authentication will be confirmed on the first API call."
+            )
+            return
         LOGGER.info("Lever API credentials verified successfully.")
 
     # 429 Too Many Requests: Apply backoff strategy to handle rate limiting.

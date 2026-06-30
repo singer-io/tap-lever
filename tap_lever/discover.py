@@ -55,7 +55,7 @@ def _build_catalog_entries(config, state, available_streams, inaccessible_stream
 
         stream = stream_cls(config, state, None, None)
         for entry in stream.generate_catalog():
-            replication_method = entry.get("replication_method")
+            replication_method = entry.get("forced-replication-method")
             replication_keys = entry.get("replication_keys", [])
 
             if replication_method == "FULL_TABLE":

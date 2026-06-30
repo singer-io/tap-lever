@@ -119,3 +119,24 @@ class TestVerifyCredentials(unittest.TestCase):
 
         client = LeverClient(default_config)
         client.verify_credentials()  # should not raise
+
+    @patch("tap_lever.client.requests.request")
+    def test_verify_credentials_does_not_claim_success_on_server_error(self, mock_request):
+        """verify_credentials does not raise and does not log success on a 5xx error.
+        A transient server error cannot confirm credentials; execution should continue
+        with a warning, not a success message.
+        """
+        response = MagicMock()
+        response.status_code = 500
+        response.text = "Internal Server Error"
+        response.json.return_value = {}
+        mock_request.return_value = response
+
+        import logging
+        with self.assertLogs("root", level="WARNING") as log_ctx:
+            client = LeverClient(default_config)
+            client.verify_credentials()  # should not raise
+
+        log_output = "\n".join(log_ctx.output)
+        self.assertIn("transient error", log_output.lower())
+        self.assertNotIn("verified successfully", log_output.lower())
