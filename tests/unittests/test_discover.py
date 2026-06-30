@@ -229,7 +229,7 @@ class TestDoDiscoverAccessChecks(unittest.TestCase):
     @patch('tap_lever.streams.base.BaseStream.load_schema_by_name')
     def test_discover_all_accessible_builds_full_catalog(self, mock_schema, mock_access):
         """All streams accessible → catalog contains all streams."""
-        from tap_lever.discovery import discover
+        from tap_lever.discover import discover
         mock_schema.return_value = {"type": "object", "properties": {"id": {"type": "string"}}}
         client = MagicMock()
 
@@ -241,7 +241,7 @@ class TestDoDiscoverAccessChecks(unittest.TestCase):
     @patch('tap_lever.streams.base.BaseStream.load_schema_by_name')
     def test_discover_excludes_inaccessible_parent_and_its_children(self, mock_schema):
         """When candidates is inaccessible, it and its children are excluded."""
-        from tap_lever.discovery import discover
+        from tap_lever.discover import discover
         mock_schema.return_value = {"type": "object", "properties": {"id": {"type": "string"}}}
         client = MagicMock()
 
@@ -264,7 +264,7 @@ class TestDoDiscoverAccessChecks(unittest.TestCase):
     @patch('tap_lever.streams.base.BaseStream.load_schema_by_name')
     def test_discover_raises_when_no_parent_accessible(self, mock_schema):
         """If no parent stream is accessible, LeverForbiddenError is raised."""
-        from tap_lever.discovery import discover
+        from tap_lever.discover import discover
         mock_schema.return_value = {"type": "object", "properties": {"id": {"type": "string"}}}
         client = MagicMock()
 

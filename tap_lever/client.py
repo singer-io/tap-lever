@@ -36,10 +36,12 @@ class LeverClient:
         self.config = config
 
     def verify_credentials(self):
-        """Probe the API with the configured token and raise LeverUnauthorizedError
-        with a human-readable message if the credentials are invalid.
-        A 403 response is treated as valid credentials (just limited permissions),
-        so it is silently swallowed here; stream-level access is handled during discovery.
+        """
+        Verify that the configured API token is valid.
+        Raises LeverUnauthorizedError if the token is rejected by the API.
+        All other errors (permission 403, server errors, network issues) are
+        swallowed — this method is a credentials-only check; stream-level
+        access is determined separately during discovery.
         """
         LOGGER.info("Verifying Lever API credentials.")
         try:
@@ -48,9 +50,11 @@ class LeverClient:
                 "GET",
                 params={"limit": 1},
             )
-        except LeverForbiddenError:
-            # 403 means the token is authentic but lacks access to /users.
-            # Credentials are still valid; stream access is checked during discovery.
+        except LeverUnauthorizedError:
+            raise
+        except Exception:
+            # Any non-auth error (permission 403, 5xx, network) is irrelevant
+            # to credential validity — ignore and let discovery handle it.
             pass
         LOGGER.info("Lever API credentials verified successfully.")
 
@@ -98,6 +102,14 @@ class LeverClient:
                 "Please verify the 'token' in your configuration."
             )
         elif response.status_code == 403:
+            # Lever returns 403 with code "NotAuthorized" when the API key itself is invalid.
+            # Distinguish this from a genuine permission-denied (stream-level access) 403.
+            if response_json and response_json.get("code") == "NotAuthorized":
+                raise LeverUnauthorizedError(
+                    f"HTTP-error-code: 403, Error: Invalid API credentials. "
+                    f"{response_json.get('message', '')} "
+                    f"Please verify the 'token' in your configuration."
+                )
             raise LeverForbiddenError(
                 f"HTTP-error-code: 403, Error: {response.text}"
             )

@@ -5,7 +5,7 @@ import singer
 import sys
 
 from tap_lever.client import LeverClient, LeverUnauthorizedError
-from tap_lever.discovery import discover
+from tap_lever.discover import discover
 from tap_lever.streams import AVAILABLE_STREAMS
 from tap_lever.state import save_state
 from tap_lever.streams.base import is_stream_selected

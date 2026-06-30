@@ -11,28 +11,28 @@ def discover(client, config, state, available_streams):
     Inaccessible parent streams (and their children) are excluded.
     Raises LeverForbiddenError if no parent stream is accessible.
     """
-    inaccessible_tables = _get_inaccessible_tables(client, config, state, available_streams)
+    inaccessible_streams = _get_inaccessible_streams(client, config, state, available_streams)
 
-    accessible_parents = [
+    accessible_parents_streams = [
         s for s in available_streams
-        if s.PARENT is None and s.TABLE not in inaccessible_tables
+        if s.PARENT is None and s.TABLE not in inaccessible_streams
     ]
-    if not accessible_parents:
+    if not accessible_parents_streams:
         raise LeverForbiddenError(
             "HTTP-error-code: 403, Error: The credentials do not have "
             "'read' access to any supported streams."
         )
 
-    if inaccessible_tables:
+    if inaccessible_streams:
         LOGGER.warning(
             "No 'read' access to stream(s): %s. Excluded from catalog.",
-            ", ".join(sorted(inaccessible_tables)),
+            ", ".join(sorted(inaccessible_streams)),
         )
 
-    return {"streams": _build_catalog_entries(config, state, available_streams, inaccessible_tables)}
+    return {"streams": _build_catalog_entries(config, state, available_streams, inaccessible_streams)}
 
 
-def _get_inaccessible_tables(client, config, state, available_streams):
+def _get_inaccessible_streams(client, config, state, available_streams):
     inaccessible = set()
     for stream_cls in available_streams:
         stream = stream_cls(config, state, None, client)
@@ -41,12 +41,12 @@ def _get_inaccessible_tables(client, config, state, available_streams):
     return inaccessible
 
 
-def _build_catalog_entries(config, state, available_streams, inaccessible_tables):
+def _build_catalog_entries(config, state, available_streams, inaccessible_streams):
     catalog = []
     for stream_cls in available_streams:
-        if stream_cls.TABLE in inaccessible_tables:
+        if stream_cls.TABLE in inaccessible_streams:
             continue
-        if stream_cls.PARENT and stream_cls.PARENT in inaccessible_tables:
+        if stream_cls.PARENT and stream_cls.PARENT in inaccessible_streams:
             LOGGER.warning(
                 "Stream '%s' excluded from catalog because its parent stream '%s' is not accessible.",
                 stream_cls.TABLE, stream_cls.PARENT,

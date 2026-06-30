@@ -74,6 +74,22 @@ class TestVerifyCredentials(unittest.TestCase):
         self.assertIn("credentials", str(ctx.exception).lower())
 
     @patch("tap_lever.client.requests.request")
+    def test_verify_credentials_raises_on_403_not_authorized(self, mock_request):
+        """verify_credentials raises LeverUnauthorizedError when Lever returns
+        403 with code='NotAuthorized' (invalid API key)."""
+        response = MagicMock()
+        response.status_code = 403
+        response.text = '{"code":"NotAuthorized","message":"Authentication incorrect."}'
+        response.json.return_value = {"code": "NotAuthorized", "message": "Authentication incorrect."}
+        mock_request.return_value = response
+
+        client = LeverClient(default_config)
+        with self.assertRaises(LeverUnauthorizedError) as ctx:
+            client.verify_credentials()
+
+        self.assertIn("credentials", str(ctx.exception).lower())
+
+    @patch("tap_lever.client.requests.request")
     def test_verify_credentials_hits_users_endpoint(self, mock_request):
         """verify_credentials probes the /users endpoint."""
         response = MagicMock()
