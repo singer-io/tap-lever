@@ -16,6 +16,10 @@ class Server429Error(Exception):
     pass
 
 
+class LeverForbiddenError(Exception):
+    pass
+
+
 class OffsetInvalidException(Exception):
     pass
 
@@ -65,6 +69,10 @@ class LeverClient:
             raise Server5xxError(msg)
         elif response.status_code == 429:
             raise Server429Error('Rate limit exceeded')
+        elif response.status_code == 403:
+            raise LeverForbiddenError(
+                f"HTTP-error-code: 403, Error: {response.text}"
+            )
         elif response.status_code != 200:
             raise RuntimeError(response.text)
 

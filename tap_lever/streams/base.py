@@ -13,6 +13,7 @@ from tap_lever.streams import cache as stream_cache
 from tap_lever.config import get_config_start_date
 from tap_lever.state import incorporate, save_state, \
     get_last_record_value_for_table
+from tap_lever.client import LeverForbiddenError
 
 
 LOGGER = singer.get_logger()
@@ -115,6 +116,25 @@ class BaseStream:
         self.write_schema()
 
         return self.sync_data()
+
+    def check_access(self) -> bool:
+        """
+        Verify that the API credentials have read access to this stream.
+        Returns True if accessible, False if a 403 Forbidden error is raised.
+        Child streams always return True (access is governed by the parent check).
+        """
+        if self.PARENT:
+            return True
+        try:
+            self.client.make_request(self.get_url(), self.API_METHOD, params={"limit": 1})
+            return True
+        except LeverForbiddenError as exc:
+            LOGGER.warning(
+                "Permission Error: Stream '%s' - %s",
+                self.__class__.__name__,
+                exc,
+            )
+            return False
 
     def get_url(self):
         return 'https://api.lever.co/v1{}'.format(self.path)
