@@ -220,28 +220,20 @@ class TestCheckAccess(unittest.TestCase):
 
 
 class TestDoDiscoverAccessChecks(unittest.TestCase):
-    """Tests for LeverRunner.do_discover() access-check filtering."""
+    """Tests for discovery.discover() access-check filtering."""
 
-    def _make_runner(self, client):
-        from tap_lever import LeverRunner
-        args = MagicMock()
-        args.config = {"token": "test_token", "start_date": "2020-01-01T00:00:00Z"}
-        args.state = {}
-        args.catalog = None
-        return LeverRunner(args, client, AVAILABLE_STREAMS)
+    _config = {"token": "test_token", "start_date": "2020-01-01T00:00:00Z"}
+    _state = {}
 
     @patch('tap_lever.streams.base.BaseStream.check_access', return_value=True)
     @patch('tap_lever.streams.base.BaseStream.load_schema_by_name')
     def test_discover_all_accessible_builds_full_catalog(self, mock_schema, mock_access):
         """All streams accessible → catalog contains all streams."""
+        from tap_lever.discovery import discover
         mock_schema.return_value = {"type": "object", "properties": {"id": {"type": "string"}}}
         client = MagicMock()
-        runner = self._make_runner(client)
 
-        import io, json
-        with patch('sys.stdout', new_callable=io.StringIO) as mock_out:
-            runner.do_discover()
-            catalog = json.loads(mock_out.getvalue())
+        catalog = discover(client, self._config, self._state, AVAILABLE_STREAMS)
 
         stream_ids = {s['tap_stream_id'] for s in catalog['streams']}
         self.assertEqual(len(stream_ids), len(AVAILABLE_STREAMS))
@@ -249,6 +241,7 @@ class TestDoDiscoverAccessChecks(unittest.TestCase):
     @patch('tap_lever.streams.base.BaseStream.load_schema_by_name')
     def test_discover_excludes_inaccessible_parent_and_its_children(self, mock_schema):
         """When candidates is inaccessible, it and its children are excluded."""
+        from tap_lever.discovery import discover
         mock_schema.return_value = {"type": "object", "properties": {"id": {"type": "string"}}}
         client = MagicMock()
 
@@ -258,11 +251,7 @@ class TestDoDiscoverAccessChecks(unittest.TestCase):
             return self.TABLE != 'candidates'
 
         with patch('tap_lever.streams.base.BaseStream.check_access', access_side_effect):
-            runner = self._make_runner(client)
-            import io, json
-            with patch('sys.stdout', new_callable=io.StringIO) as mock_out:
-                runner.do_discover()
-                catalog = json.loads(mock_out.getvalue())
+            catalog = discover(client, self._config, self._state, AVAILABLE_STREAMS)
 
         stream_ids = {s['tap_stream_id'] for s in catalog['streams']}
         self.assertNotIn('candidates', stream_ids)
@@ -275,6 +264,7 @@ class TestDoDiscoverAccessChecks(unittest.TestCase):
     @patch('tap_lever.streams.base.BaseStream.load_schema_by_name')
     def test_discover_raises_when_no_parent_accessible(self, mock_schema):
         """If no parent stream is accessible, LeverForbiddenError is raised."""
+        from tap_lever.discovery import discover
         mock_schema.return_value = {"type": "object", "properties": {"id": {"type": "string"}}}
         client = MagicMock()
 
@@ -282,6 +272,5 @@ class TestDoDiscoverAccessChecks(unittest.TestCase):
             return bool(self.PARENT)  # only children return True
 
         with patch('tap_lever.streams.base.BaseStream.check_access', no_access):
-            runner = self._make_runner(client)
             with self.assertRaises(LeverForbiddenError):
-                runner.do_discover()
+                discover(client, self._config, self._state, AVAILABLE_STREAMS)

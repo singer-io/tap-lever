@@ -4,7 +4,8 @@ import json
 import singer
 import sys
 
-from tap_lever.client import LeverClient, LeverForbiddenError
+from tap_lever.client import LeverClient, LeverUnauthorizedError
+from tap_lever.discovery import discover
 from tap_lever.streams import AVAILABLE_STREAMS
 from tap_lever.state import save_state
 from tap_lever.streams.base import is_stream_selected
@@ -23,60 +24,8 @@ class LeverRunner:
 
     def do_discover(self):
         LOGGER.info("Starting discovery.")
-
-        # Check read access for each stream; child streams always pass.
-        inaccessible_tables = set()
-        for available_stream in self.available_streams:
-            stream = available_stream(self.config, self.state, None, self.client)
-            if not stream.check_access():
-                inaccessible_tables.add(available_stream.TABLE)
-
-        # Fail fast if no parent stream is reachable.
-        accessible_parents = [
-            s for s in self.available_streams
-            if s.PARENT is None and s.TABLE not in inaccessible_tables
-        ]
-        if not accessible_parents:
-            raise LeverForbiddenError(
-                "HTTP-error-code: 403, Error: The credentials do not have "
-                "'read' access to any supported streams."
-            )
-
-        if inaccessible_tables:
-            LOGGER.warning(
-                "No 'read' access to stream(s): %s. Excluded from catalog.",
-                ", ".join(sorted(inaccessible_tables)),
-            )
-
-        catalog = []
-        for available_stream in self.available_streams:
-            if available_stream.TABLE in inaccessible_tables:
-                continue
-            if available_stream.PARENT and available_stream.PARENT in inaccessible_tables:
-                LOGGER.warning(
-                    "Stream '%s' excluded from catalog because its parent stream '%s' is not accessible.",
-                    available_stream.TABLE, available_stream.PARENT,
-                )
-                continue
-
-            stream = available_stream(self.config, self.state, None, None)
-
-            for entry in stream.generate_catalog():
-                replication_method = entry.get("replication_method")
-                replication_keys = entry.get("replication_keys", [])
-
-                if replication_method == "FULL_TABLE":
-                    entry.pop("replication_keys", None)
-                elif replication_method == "INCREMENTAL":
-                    if not replication_keys:
-                        raise ValueError(
-                            f"Stream '{entry.get('stream')}' is marked as INCREMENTAL "
-                            f"but has no replication_keys defined."
-                        )
-
-                catalog.append(entry)
-
-        json.dump({'streams': catalog}, sys.stdout, indent=4)
+        catalog = discover(self.client, self.config, self.state, self.available_streams)
+        json.dump(catalog, sys.stdout, indent=4)
 
     def get_streams_to_replicate(self):
         streams = []
@@ -134,6 +83,7 @@ class LeverRunner:
 def main():
     args = singer.utils.parse_args(required_config_keys=['token'])
     client = LeverClient(args.config)
+    client.verify_credentials()
     runner = LeverRunner(
         args, client, AVAILABLE_STREAMS)
 
