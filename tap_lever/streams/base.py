@@ -130,8 +130,8 @@ class BaseStream:
             return True
         except LeverForbiddenError as exc:
             LOGGER.warning(
-                "Permission Error: Stream '%s' - %s",
-                self.__class__.__name__,
+                "Excluding unauthorized stream '%s' from catalog. HTTP-Error-Message: '%s'",
+                self.TABLE,
                 exc,
             )
             return False
