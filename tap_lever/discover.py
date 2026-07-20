@@ -23,10 +23,18 @@ def discover(client, config, state, available_streams):
             "'read' access to any supported streams."
         )
 
-    if inaccessible_streams:
+    # Include cascade-excluded children in the summary so the final warning
+    # covers every stream that will be absent from the catalog.
+    cascade_excluded = {
+        s.TABLE for s in available_streams
+        if s.PARENT and s.PARENT in inaccessible_streams
+    }
+    all_excluded = inaccessible_streams | cascade_excluded
+
+    if all_excluded:
         LOGGER.warning(
             "No 'read' access to stream(s): %s. Excluded from catalog.",
-            ", ".join(sorted(inaccessible_streams)),
+            ", ".join(sorted(all_excluded)),
         )
 
     return {"streams": _build_catalog_entries(config, state, available_streams, inaccessible_streams)}
@@ -47,10 +55,6 @@ def _build_catalog_entries(config, state, available_streams, inaccessible_stream
         if stream_cls.TABLE in inaccessible_streams:
             continue
         if stream_cls.PARENT and stream_cls.PARENT in inaccessible_streams:
-            LOGGER.warning(
-                "Stream '%s' excluded from catalog because its parent stream '%s' is not accessible.",
-                stream_cls.TABLE, stream_cls.PARENT,
-            )
             continue
 
         stream = stream_cls(config, state, None, None)
