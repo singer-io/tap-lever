@@ -1,0 +1,72 @@
+import singer
+
+from tap_lever.client import LeverForbiddenError
+
+LOGGER = singer.get_logger()  # noqa
+
+
+def discover(client, config, state, available_streams):
+    """
+    Check stream access, build and return the catalog dict.
+    Inaccessible parent streams (and their children) are excluded.
+    Raises LeverForbiddenError if no parent stream is accessible.
+    """
+    inaccessible_streams = _get_inaccessible_streams(client, config, state, available_streams)
+
+    accessible_parents_streams = [
+        s for s in available_streams
+        if s.PARENT is None and s.TABLE not in inaccessible_streams
+    ]
+    if not accessible_parents_streams:
+        raise LeverForbiddenError(
+            "HTTP-error-code: 403, Error: The credentials do not have "
+            "'read' access to any supported streams."
+        )
+
+    if inaccessible_streams:
+        cascade_excluded = {
+            s.TABLE for s in available_streams
+            if s.PARENT and s.PARENT in inaccessible_streams
+        }
+        LOGGER.warning(
+            "No 'read' access to parent stream(s): [%s]."
+            " Cascade-excluded child stream(s): [%s]. Excluded from catalog.",
+            ", ".join(sorted(inaccessible_streams)),
+            ", ".join(sorted(cascade_excluded)) or "none",
+        )
+
+    return {"streams": _build_catalog_entries(config, state, available_streams, inaccessible_streams)}
+
+
+def _get_inaccessible_streams(client, config, state, available_streams):
+    inaccessible = set()
+    for stream_cls in available_streams:
+        stream = stream_cls(config, state, None, client)
+        if not stream.check_access():
+            inaccessible.add(stream_cls.TABLE)
+    return inaccessible
+
+
+def _build_catalog_entries(config, state, available_streams, inaccessible_streams):
+    catalog = []
+    for stream_cls in available_streams:
+        if stream_cls.TABLE in inaccessible_streams:
+            continue
+        if stream_cls.PARENT and stream_cls.PARENT in inaccessible_streams:
+            continue
+
+        stream = stream_cls(config, state, None, None)
+        for entry in stream.generate_catalog():
+            replication_method = entry.get("forced-replication-method")
+            replication_keys = entry.get("replication_keys", [])
+
+            if replication_method == "FULL_TABLE":
+                entry.pop("replication_keys", None)
+            elif replication_method == "INCREMENTAL" and not replication_keys:
+                raise ValueError(
+                    f"Stream '{entry.get('stream')}' is marked as INCREMENTAL "
+                    f"but has no replication_keys defined."
+                )
+
+            catalog.append(entry)
+    return catalog

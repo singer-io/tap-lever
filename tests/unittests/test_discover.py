@@ -2,6 +2,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
+from tap_lever.client import LeverForbiddenError
 from tap_lever.streams import AVAILABLE_STREAMS
 from tap_lever.streams.applications import CandidateApplicationsStream, OpportunityApplicationsStream
 from tap_lever.streams.candidates import CandidateStream
@@ -174,3 +175,102 @@ class TestLeverDiscovery(unittest.TestCase):
         self.assertIsNotNone(root_meta)
         self.assertIn('parent-tap-stream-id', root_meta)
         self.assertEqual(root_meta['parent-tap-stream-id'], 'candidates')
+
+
+class TestCheckAccess(unittest.TestCase):
+    """Tests for BaseStream.check_access()."""
+
+    def _make_stream(self, stream_cls, client):
+        config = {"token": "test_token", "start_date": "2020-01-01T00:00:00Z"}
+        return stream_cls(config, {}, None, client)
+
+    def test_check_access_returns_true_when_request_succeeds(self):
+        """check_access() returns True when the API responds successfully."""
+        client = MagicMock()
+        client.make_request.return_value = {"data": [], "next": None}
+
+        stream = self._make_stream(CandidateStream, client)
+        self.assertTrue(stream.check_access())
+
+    def test_check_access_returns_false_on_forbidden(self):
+        """check_access() returns False when the API raises LeverForbiddenError."""
+        client = MagicMock()
+        client.make_request.side_effect = LeverForbiddenError("HTTP-error-code: 403")
+
+        stream = self._make_stream(CandidateStream, client)
+        self.assertFalse(stream.check_access())
+
+    def test_check_access_child_stream_always_returns_true(self):
+        """Child streams always return True regardless of API response."""
+        client = MagicMock()
+        client.make_request.side_effect = LeverForbiddenError("HTTP-error-code: 403")
+
+        stream = self._make_stream(CandidateApplicationsStream, client)
+        self.assertTrue(stream.check_access())
+        client.make_request.assert_not_called()
+
+    def test_check_access_opportunity_child_always_returns_true(self):
+        """Opportunity child streams return True without making a request."""
+        client = MagicMock()
+        client.make_request.side_effect = LeverForbiddenError("HTTP-error-code: 403")
+
+        stream = self._make_stream(OpportunityApplicationsStream, client)
+        self.assertTrue(stream.check_access())
+        client.make_request.assert_not_called()
+
+
+class TestDoDiscoverAccessChecks(unittest.TestCase):
+    """Tests for discovery.discover() access-check filtering."""
+
+    _config = {"token": "test_token", "start_date": "2020-01-01T00:00:00Z"}
+    _state = {}
+
+    @patch('tap_lever.streams.base.BaseStream.check_access', return_value=True)
+    @patch('tap_lever.streams.base.BaseStream.load_schema_by_name')
+    def test_discover_all_accessible_builds_full_catalog(self, mock_schema, mock_access):
+        """All streams accessible → catalog contains all streams."""
+        from tap_lever.discover import discover
+        mock_schema.return_value = {"type": "object", "properties": {"id": {"type": "string"}}}
+        client = MagicMock()
+
+        catalog = discover(client, self._config, self._state, AVAILABLE_STREAMS)
+
+        stream_ids = {s['tap_stream_id'] for s in catalog['streams']}
+        self.assertEqual(len(stream_ids), len(AVAILABLE_STREAMS))
+
+    @patch('tap_lever.streams.base.BaseStream.load_schema_by_name')
+    def test_discover_excludes_inaccessible_parent_and_its_children(self, mock_schema):
+        """When candidates is inaccessible, it and its children are excluded."""
+        from tap_lever.discover import discover
+        mock_schema.return_value = {"type": "object", "properties": {"id": {"type": "string"}}}
+        client = MagicMock()
+
+        def access_side_effect(self):
+            if self.PARENT:
+                return True
+            return self.TABLE != 'candidates'
+
+        with patch('tap_lever.streams.base.BaseStream.check_access', access_side_effect):
+            catalog = discover(client, self._config, self._state, AVAILABLE_STREAMS)
+
+        stream_ids = {s['tap_stream_id'] for s in catalog['streams']}
+        self.assertNotIn('candidates', stream_ids)
+        self.assertNotIn('candidate_applications', stream_ids)
+        self.assertNotIn('candidate_offers', stream_ids)
+        self.assertNotIn('candidate_referrals', stream_ids)
+        self.assertNotIn('candidate_resumes', stream_ids)
+        self.assertIn('opportunities', stream_ids)
+
+    @patch('tap_lever.streams.base.BaseStream.load_schema_by_name')
+    def test_discover_raises_when_no_parent_accessible(self, mock_schema):
+        """If no parent stream is accessible, LeverForbiddenError is raised."""
+        from tap_lever.discover import discover
+        mock_schema.return_value = {"type": "object", "properties": {"id": {"type": "string"}}}
+        client = MagicMock()
+
+        def no_access(self):
+            return bool(self.PARENT)  # only children return True
+
+        with patch('tap_lever.streams.base.BaseStream.check_access', no_access):
+            with self.assertRaises(LeverForbiddenError):
+                discover(client, self._config, self._state, AVAILABLE_STREAMS)

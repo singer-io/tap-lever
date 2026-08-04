@@ -5,6 +5,7 @@ import singer
 import sys
 
 from tap_lever.client import LeverClient
+from tap_lever.discover import discover
 from tap_lever.streams import AVAILABLE_STREAMS
 from tap_lever.state import save_state
 from tap_lever.streams.base import is_stream_selected
@@ -23,27 +24,8 @@ class LeverRunner:
 
     def do_discover(self):
         LOGGER.info("Starting discovery.")
-
-        catalog = []
-        for available_stream in self.available_streams:
-            stream = available_stream(self.config, self.state, None, None)
-
-            for entry in stream.generate_catalog():
-                replication_method = entry.get("replication_method")
-                replication_keys = entry.get("replication_keys", [])
-
-                if replication_method == "FULL_TABLE":
-                    entry.pop("replication_keys", None)
-                elif replication_method == "INCREMENTAL":
-                    if not replication_keys:
-                        raise ValueError(
-                            f"Stream '{entry.get('stream')}' is marked as INCREMENTAL "
-                            f"but has no replication_keys defined."
-                        )
-
-                catalog.append(entry)
-
-        json.dump({'streams': catalog}, sys.stdout, indent=4)
+        catalog = discover(self.client, self.config, self.state, self.available_streams)
+        json.dump(catalog, sys.stdout, indent=4)
 
     def get_streams_to_replicate(self):
         streams = []
@@ -101,6 +83,7 @@ class LeverRunner:
 def main():
     args = singer.utils.parse_args(required_config_keys=['token'])
     client = LeverClient(args.config)
+    client.verify_credentials()
     runner = LeverRunner(
         args, client, AVAILABLE_STREAMS)
 
