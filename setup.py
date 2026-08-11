@@ -3,20 +3,20 @@
 from setuptools import setup, find_packages
 
 setup(name='tap-lever',
-      version='1.1.0',
+      version='1.2.0',
       description='Singer.io tap for extracting data from the Lever API',
       author='Fishtown Analytics',
       url='http://fishtownanalytics.com',
       classifiers=['Programming Language :: Python :: 3 :: Only'],
       py_modules=['tap_lever'],
       install_requires=[
-          'singer-python==6.1.1',
+          'singer-python==6.8.0',
           'backoff==2.2.1',
-          'requests==2.32.4',
+          'requests==2.34.2',
       ],
       extras_require = {
         "dev": [
-          "nose",
+          "pytest",
         ],
       },
       entry_points='''

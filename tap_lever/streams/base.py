@@ -13,6 +13,7 @@ from tap_lever.streams import cache as stream_cache
 from tap_lever.config import get_config_start_date
 from tap_lever.state import incorporate, save_state, \
     get_last_record_value_for_table
+from tap_lever.client import LeverForbiddenError
 
 
 LOGGER = singer.get_logger()
@@ -34,7 +35,9 @@ class BaseStream:
     API_METHOD = 'GET'
     REQUIRES = []
     REPLICATION_METHOD = 'FULL_TABLE'
+    PARENT = None
     REPLICATION_KEYS = []
+    path = None
 
     def __init__(self, config, state, catalog, client):
         self.config = config
@@ -76,35 +79,26 @@ class BaseStream:
 
     def generate_catalog(self):
         schema = self.get_schema()
-        mdata = singer.metadata.new()
+        replication_keys = self.get_replication_keys()
 
-        mdata = singer.metadata.write(
-            mdata,
-            (),
-            'inclusion',
-            'available'
+        mdata = singer.metadata.get_standard_metadata(
+            schema=schema,
+            key_properties=self.KEY_PROPERTIES,
+            valid_replication_keys=replication_keys or [],
+            replication_method=self.get_replication_method(),
         )
+        mdata = singer.metadata.to_map(mdata)
 
-        for field_name, field_schema in schema.get('properties').items():
-            inclusion = 'available'
-
-            if field_name in self.KEY_PROPERTIES:
-                inclusion = 'automatic'
-
-            mdata = singer.metadata.write(
-                mdata,
-                ('properties', field_name),
-                'inclusion',
-                inclusion
-            )
+        if self.PARENT:
+            singer.metadata.write(mdata, (), 'parent-tap-stream-id', self.PARENT)
 
         return [{
             'tap_stream_id': self.TABLE,
             'stream': self.TABLE,
             'key_properties': self.KEY_PROPERTIES,
-            'replication_method': self.get_replication_method(),
-            'replication_keys': self.get_replication_keys(),
-            'schema': self.get_schema(),
+            'forced-replication-method': self.get_replication_method(),
+            'replication_keys': replication_keys,
+            'schema': schema,
             'metadata': singer.metadata.to_list(mdata)
         }]
 
@@ -122,6 +116,25 @@ class BaseStream:
         self.write_schema()
 
         return self.sync_data()
+
+    def check_access(self) -> bool:
+        """
+        Verify that the API credentials have read access to this stream.
+        Returns True if accessible, False if a 403 Forbidden error is raised.
+        Child streams always return True (access is governed by the parent check).
+        """
+        if self.PARENT:
+            return True
+        try:
+            self.client.make_request(self.get_url(), self.API_METHOD, params={"limit": 1})
+            return True
+        except LeverForbiddenError as exc:
+            LOGGER.warning(
+                "Excluding unauthorized stream '%s' from catalog. HTTP-Error-Message: '%s'",
+                self.TABLE,
+                exc,
+            )
+            return False
 
     def get_url(self):
         return 'https://api.lever.co/v1{}'.format(self.path)
